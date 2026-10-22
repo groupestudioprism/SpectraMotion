@@ -1,26 +1,92 @@
-/* ===== Intro animée : le prisme s'allume, le W apparaît ===== */
-#splash{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:#0C0A16;color:#fff;overflow:hidden;transition:opacity .55s ease,visibility .55s}
+/* ===== Intro SPECTRA Motion : des calques se superposent, la timeline les synchronise, le symbole s'assemble =====
+   La feuille décrit d'abord l'ÉTAT FINAL (logo stable + barre + message) ; la scène (#splash.sp-play) n'ajoute que des animations
+   qui y aboutissent : retirer .sp-play (« Passer », erreur) ou ne jamais l'ajouter (mouvements réduits, intro déjà vue) donne l'état final. */
+#splash{--sp-in:cubic-bezier(.22,.8,.2,1);--sp-io:cubic-bezier(.65,0,.35,1);position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:#0C0A16;color:#fff;overflow:hidden;transition:opacity .45s ease,visibility .45s}
 #splash.done{opacity:0;visibility:hidden}
-.sp-aurora{position:absolute;inset:0;filter:blur(70px);opacity:.75}
-.sp-aurora i{position:absolute;width:52vmax;height:52vmax;border-radius:50%;mix-blend-mode:screen;animation:aur 7s ease-in-out infinite alternate}
-.sp-aurora i:nth-child(1){left:-12vmax;top:-18vmax;background:radial-gradient(circle,#7B2FF7 0,transparent 62%)}
-.sp-aurora i:nth-child(2){right:-14vmax;top:8vmax;background:radial-gradient(circle,#14C2EC 0,transparent 62%);animation-delay:-2s}
-.sp-aurora i:nth-child(3){left:18vmax;bottom:-26vmax;background:radial-gradient(circle,#FF3F86 0,transparent 60%);animation-delay:-4s}
-@keyframes aur{to{transform:translate(6vmax,4vmax) scale(1.12)}}
-.sp-center{position:relative;display:grid;justify-items:center;gap:18px}
-.sp-mark{position:relative;width:112px;height:112px;border-radius:26px;overflow:hidden;box-shadow:0 20px 60px rgb(123 47 247 / .45),0 0 0 1px rgb(255 255 255 / .12);animation:markIn 1s cubic-bezier(.2,.9,.25,1.2) both}
-.sp-mark svg{width:100%;height:100%;display:block}
-.sp-shine{position:absolute;inset:-40%;background:linear-gradient(115deg,transparent 40%,rgb(255 255 255 / .75) 50%,transparent 60%);transform:translateX(-80%);animation:shine 1.4s .7s ease-in-out both}
-@keyframes markIn{from{opacity:0;transform:scale(.6) rotate(-8deg)}}
-@keyframes shine{to{transform:translateX(80%)}}
-.sp-word{display:flex;align-items:baseline;gap:10px;animation:fadeUp .7s .55s ease-out both}
-.sp-word b{font:800 34px/1 var(--f-disp);letter-spacing:.06em}
-.sp-word span{font:500 30px/1 var(--f-disp);background:var(--prism);-webkit-background-clip:text;background-clip:text;color:transparent}
-.sp-tag{margin:0;font:500 14px/1 var(--f-ui);color:rgb(255 255 255 / .62);animation:fadeUp .7s .8s ease-out both}
-@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}}
+.sp-bg,.sp-bg i{position:absolute;inset:0;pointer-events:none}
+.sp-grid{background:linear-gradient(rgb(255 255 255 / .035) 1px,transparent 1px) 0 0/48px 48px,linear-gradient(90deg,rgb(255 255 255 / .035) 1px,transparent 1px) 0 0/48px 48px;-webkit-mask-image:radial-gradient(ellipse at 50% 46%,#000 0,transparent 68%);mask-image:radial-gradient(ellipse at 50% 46%,#000 0,transparent 68%)}
+.sp-glow{background:radial-gradient(ellipse 46% 34% at 50% 44%,rgb(61 99 255 / .20),transparent 70%),radial-gradient(ellipse 30% 22% at 38% 50%,rgb(123 47 247 / .20),transparent 70%),radial-gradient(ellipse 26% 20% at 64% 52%,rgb(255 63 134 / .10),transparent 70%)}
+.sp-stage{position:relative;width:min(94vw,760px,118vh);aspect-ratio:16/10;margin-top:-4vh}
+.sp-stage svg{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible}
+/* état final */
+.sp-tl,.sp-c,.sp-out{opacity:0}
+.sp-pop{transform-origin:240px 125px}
+.sp-ph{transform:translateX(432px)}
+.sp-dmg,.sp-dmf{transform:rotate(45deg);transform-box:fill-box;transform-origin:center}
+.sp-dmg{fill:none;stroke:#fff;stroke-opacity:.45;stroke-width:.9}
+.sp-tl-line{stroke-dasharray:1}
+.sp-wclip{transform-box:fill-box;transform-origin:left center}
+.sp-t,.sp-back,.sp-face{transform-box:fill-box}
+.sp-face{transform-origin:center}
+.sp-out{stroke-dasharray:1}
+/* « Passer l'animation » */
+.sp-skip{position:absolute;top:max(14px,env(safe-area-inset-top));right:max(14px,env(safe-area-inset-right));z-index:2;padding:9px 16px;border-radius:999px;border:1px solid rgb(255 255 255 / .4);background:rgb(255 255 255 / .1);color:#fff;font:600 13px/1 var(--f-ui);letter-spacing:.01em;cursor:pointer;visibility:hidden;opacity:0;transition:opacity .2s,visibility .2s,background .15s}
+.sp-skip:hover{background:rgb(255 255 255 / .2)}
+.sp-skip:focus-visible{outline:2px solid #14C2EC;outline-offset:3px}
+#splash.sp-play:not(.sp-end) .sp-skip{visibility:visible;opacity:1;transition-delay:.25s,.25s,0s}
+/* barre et message de chargement (existants) */
 .sp-bar{position:absolute;left:50%;bottom:72px;width:180px;height:3px;margin-left:-90px;border-radius:3px;background:rgb(255 255 255 / .12);overflow:hidden}
 .sp-bar i{display:block;height:100%;width:40%;border-radius:3px;background:var(--prism);animation:bar 1.3s ease-in-out infinite}
 @keyframes bar{from{transform:translateX(-110%)}to{transform:translateX(260%)}}
-.sp-msg{position:absolute;bottom:36px;left:0;right:0;margin:0;text-align:center;font-size:12.5px;color:rgb(255 255 255 / .55)}
+.sp-msg{position:absolute;bottom:36px;left:0;right:0;margin:0;padding:0 16px;text-align:center;font-size:12.5px;color:rgb(255 255 255 / .6)}
 .sp-msg.err{color:#FF9DB8}
-@media (prefers-reduced-motion:reduce){.sp-aurora i,.sp-mark,.sp-shine,.sp-word,.sp-tag,.sp-bar i{animation:none}}
+@media (max-height:480px){.sp-bar{bottom:48px}.sp-msg{bottom:20px}.sp-stage{margin-top:-2vh}}
+/* intro déjà vue / mouvements réduits : le logo est là tout de suite (fondu court) */
+#splash.sp-rm .sp-stage,#splash.sp-rm .sp-bar,#splash.sp-rm .sp-msg{animation:sp-fade .15s linear both}
+@keyframes sp-fade{from{opacity:0}}
+
+/* ---- la scène ---- */
+#splash.sp-play .sp-grid{animation:sp-fade .7s .0s var(--sp-io) both}
+#splash.sp-play .sp-glow{animation:sp-glow 2.5s var(--sp-io) both}
+@keyframes sp-glow{0%,40%{opacity:0}100%{opacity:1}}
+#splash.sp-play .sp-msg{animation:sp-fade .4s .5s linear both}
+#splash.sp-play .sp-bar{animation:sp-fade .3s 2.1s linear both}
+/* timeline : une seule piste, une tête de lecture, des images clés en losange */
+#splash.sp-play .sp-tl{animation:sp-tl 2.6s linear both}
+@keyframes sp-tl{0%{opacity:0}10%,88%{opacity:1}100%{opacity:0}}
+#splash.sp-play .sp-tl-line{animation:sp-draw .6s .05s var(--sp-io) both}
+@keyframes sp-draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+#splash.sp-play .sp-ticks{animation:sp-fade .4s .35s linear both}
+#splash.sp-play .sp-dmg{animation:sp-fade .3s .3s linear both}
+#splash.sp-play .sp-ph{animation:sp-ph 1.9s .4s linear both}
+@keyframes sp-ph{from{transform:translateX(48px)}to{transform:translateX(432px)}}
+#splash.sp-play .sp-dmf{animation:sp-pop .38s var(--sp-in) both}
+#splash.sp-play .sp-d1.sp-dmf{animation-delay:.6s}#splash.sp-play .sp-d2.sp-dmf{animation-delay:.8s}#splash.sp-play .sp-d3.sp-dmf{animation-delay:1s}
+#splash.sp-play .sp-d4.sp-dmf{animation-delay:1.65s}#splash.sp-play .sp-d5.sp-dmf{animation-delay:2.03s}
+@keyframes sp-pop{0%{opacity:0;transform:rotate(45deg) scale(0)}60%{opacity:1;transform:rotate(45deg) scale(1.4)}100%{opacity:1;transform:rotate(45deg) scale(1)}}
+/* calques : ils glissent, se superposent avec une légère profondeur, puis convergent */
+#splash.sp-play .sp-c1{animation:sp-c1 1.6s .05s both}
+#splash.sp-play .sp-c2{animation:sp-c2 1.4s .25s both}
+#splash.sp-play .sp-c3{animation:sp-c3 1.2s .45s both}
+@keyframes sp-c1{0%{opacity:0;transform:translate(-190px,-70px) rotate(-8deg) scale(.9);animation-timing-function:var(--sp-in)}
+ 34.4%{opacity:1;transform:translate(-30px,-15px) rotate(-3deg) scale(1);animation-timing-function:var(--sp-io)}
+ 68.75%{opacity:1;transform:translate(-30px,-15px) rotate(-3deg) scale(1);animation-timing-function:var(--sp-io)}
+ 100%{opacity:0;transform:translate(0,0) rotate(0) scale(.5)}}
+@keyframes sp-c2{0%{opacity:0;transform:translate(60px,150px) rotate(5deg) scale(.9);animation-timing-function:var(--sp-in)}
+ 39.3%{opacity:1;transform:translate(0,0) rotate(0) scale(1);animation-timing-function:var(--sp-io)}
+ 64.3%{opacity:1;transform:translate(0,0) rotate(0) scale(1);animation-timing-function:var(--sp-io)}
+ 100%{opacity:0;transform:translate(0,0) rotate(0) scale(.5)}}
+@keyframes sp-c3{0%{opacity:0;transform:translate(230px,30px) rotate(7deg) scale(.9);animation-timing-function:var(--sp-in)}
+ 45.8%{opacity:1;transform:translate(30px,15px) rotate(3deg) scale(1);animation-timing-function:var(--sp-io)}
+ 58.3%{opacity:1;transform:translate(30px,15px) rotate(3deg) scale(1);animation-timing-function:var(--sp-io)}
+ 100%{opacity:0;transform:translate(0,0) rotate(0) scale(.5)}}
+/* le symbole officiel s'assemble : contour tracé, épaisseur, face, traînées */
+#splash.sp-play .sp-out{animation:sp-out 1s 1.05s both}
+@keyframes sp-out{0%{opacity:1;stroke-dashoffset:1;animation-timing-function:var(--sp-io)}70%{opacity:1;stroke-dashoffset:0;animation-timing-function:linear}100%{opacity:0;stroke-dashoffset:0}}
+#splash.sp-play .sp-back{animation:sp-back .55s 1.3s var(--sp-in) both}
+@keyframes sp-back{from{opacity:0;transform:translate(9px,9px)}}
+#splash.sp-play .sp-face{animation:sp-face .55s 1.4s var(--sp-in) both}
+@keyframes sp-face{from{opacity:0;transform:translate(-8px,-4px) scale(.93)}}
+#splash.sp-play .sp-t{animation:sp-trail .5s var(--sp-in) both}
+#splash.sp-play .sp-t1{animation-delay:1.62s}#splash.sp-play .sp-t2{animation-delay:1.7s}#splash.sp-play .sp-t3{animation-delay:1.78s}
+@keyframes sp-trail{from{opacity:0;transform:translateX(-22px)}}
+/* le symbole glisse à sa place (court dépassement), le mot-symbole se dévoile, un dernier léger rebond harmonise */
+#splash.sp-play .sp-slide{animation:sp-slide .66s 1.85s both}
+@keyframes sp-slide{0%{transform:translateX(146.4px);animation-timing-function:var(--sp-in)}82%{transform:translateX(-3px);animation-timing-function:var(--sp-io)}100%{transform:translateX(0)}}
+#splash.sp-play .sp-wclip{animation:sp-wipe .58s 1.98s var(--sp-io) both}
+@keyframes sp-wipe{from{transform:scaleX(0)}}
+#splash.sp-play .sp-word{animation:sp-word .6s 1.98s var(--sp-in) both}
+@keyframes sp-word{from{opacity:0;transform:translateX(-26px)}}
+#splash.sp-play .sp-pop{animation:sp-lock .42s 2.1s both}
+@keyframes sp-lock{0%{transform:scale(1);animation-timing-function:var(--sp-in)}45%{transform:scale(1.022);animation-timing-function:var(--sp-io)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){#splash *{animation:none!important}#splash .sp-bar i{animation:none}#splash.sp-rm .sp-stage,#splash.sp-rm .sp-bar,#splash.sp-rm .sp-msg{animation:sp-fade .15s linear both!important}}

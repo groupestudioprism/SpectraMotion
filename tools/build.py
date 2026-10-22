@@ -34,9 +34,27 @@ def symbol():
     inner = re.search(r'<svg[^>]*>(.*)</svg>', svg, re.S).group(1)
     defs = re.search(r'<defs>(.*?)</defs>', inner, re.S).group(1)
     return defs + '<symbol id="swMark" viewBox="0 0 64 64">' + inner.replace('<defs>' + defs + '</defs>', '') + '</symbol>'
+def splash_parts():
+    """symbole et mot-symbole OFFICIELS (assets/branding) découpés en calques pour l'intro : mêmes tracés, aucun redessin"""
+    sym = (ROOT / 'assets' / 'branding' / 'spectra-motion-symbol.svg').read_text(encoding='utf-8')
+    inner = re.search(r'<svg[^>]*>(.*)</svg>', sym, re.S).group(1)
+    inner = re.sub(r'<defs>.*?</defs>', '', inner, count=1, flags=re.S)
+    m = re.search(r'((?:<path[^>]*url\(#mst\d\)[^>]*/>){3})(<mask id="mmk".*?</mask>)<g mask="url\(#mmk\)">(<path[^>]*/><path[^>]*/>)(<clipPath id="mcl">(<path d="([^"]+)"[^>]*/>)</clipPath>)<g clip-path="url\(#mcl\)">(.*?)</g></g>\s*$', inner, re.S)
+    assert m, 'structure du symbole inattendue'
+    trails, mask, back, clip, _, face_d, face = m.groups()
+    trails = ''.join(t.replace('<path ', f'<path class="sp-t sp-t{i}" ', 1) for i, t in enumerate(re.findall(r'<path[^>]*/>', trails), 1))
+    defs = '<defs>' + mask.replace('mmk', 'spmk') + clip.replace('mcl', 'spcl') + '</defs>'
+    mark = (defs + '<g transform="translate(0 2) scale(2.6)">' + trails + '<g mask="url(#spmk)"><g class="sp-back">' + back + '</g>'
+            '<g class="sp-face"><g clip-path="url(#spcl)">' + face + '</g></g></g>'
+            f'<path class="sp-out" pathLength="1" d="{face_d}" fill="none" stroke="url(#mface)" stroke-width=".9" stroke-linejoin="round"/></g>')
+    logo = (ROOT / 'assets' / 'branding' / 'spectra-motion-logo-dark.svg').read_text(encoding='utf-8')
+    word = re.findall(r'<path d="[^"]+" fill="#FFFFFF"/>', logo)
+    assert len(word) == 2, 'mot-symbole inattendu'
+    return mark, ''.join(word)
 def assemble():
     editor = ''.join(f'/* ==== {f.name} ==== */\n' + f.read_text(encoding='utf-8') + '\n' for f in sorted((S / 'motion').glob('*.js')))
-    body = rd('parts/body.html').replace('<!--SYMBOL-->', symbol(), 1)
+    mark, word = splash_parts()
+    body = rd('parts/body.html').replace('<!--SYMBOL-->', symbol(), 1).replace('<!--SPMARK-->', mark, 1).replace('<!--SPWORD-->', word, 1)
     return (rd('parts/head.html') + '<style>\n' + ''.join(rd('css/' + c) for c in CSS_ORDER) + '</style>\n</head><body>\n' + body
             + "<script>\n(() => {\n'use strict';\n" + editor + '/*DEMO-HOOK*/\n})();\n</script>\n'
             + '<script>\n' + rd('js/auth.js') + rd('js/cloud.js') + rd('js/auth-end.js') + '</script>\n')

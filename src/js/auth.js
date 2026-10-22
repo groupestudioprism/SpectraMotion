@@ -714,9 +714,11 @@ let splashT = 0;
 function afterIntro(){ return new Promise(res => { const t0 = performance.now(); const tick = () => { const sp = $a('#splash'), ready = window.__swReady === true || performance.now() - t0 > 15000;
   if ((!sp || sp.classList.contains('done')) && ready) setTimeout(res, sp ? 700 : 250); else setTimeout(tick, 120); }; tick(); }); }
 function hideSplashSoon(){ // l'écran de compte n'attend pas l'éditeur
-  if (splashT) return; const sp = $a('#splash'); if (!sp) return;
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  splashT = setTimeout(() => { sp.classList.add('done'); setTimeout(() => sp.remove(), 600); }, Math.max(0, (reduce ? 600 : 2900) - performance.now()));
+  if (splashT) return; const sp = $a('#splash'); if (!sp) return; splashT = 1;
+  const fin = () => { sp.inert = true; try { if (sp.contains(document.activeElement)) document.activeElement.blur(); } catch(e){} sp.classList.add('done'); setTimeout(() => sp.remove(), 520); };
+  const I = window.__spIntro;   // intro animée : sa scène se termine avant la sortie (voir body.html) ; sinon repli sur l'ancien délai
+  if (I && I.whenReleased) I.whenReleased(fin);
+  else setTimeout(fin, Math.max(0, 2900 - performance.now()));
 }
 function show(name, opts = {}){
   if (name !== 'loading') hideSplashSoon();
