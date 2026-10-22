@@ -69,6 +69,7 @@ function mkShape(P, k = 'rect', o = {}){
   const s = Math.round(Math.min(P.w, P.h) * .3);
   return baseLayer(P, 'shape', {name:SHAPE_NAMES[k] || 'Forme', k, fill:'#6D3BFF', fill2:'', ga:135, stroke:'', sw:0, r:k === 'rect' ? 0 : 0, x:Math.round((P.w - s) / 2), y:Math.round((P.h - s) / 2), w:s, h:s, ...o});
 }
+const MASKS = {none:'Aucun', ellipse:'Cercle', round:'Arrondi', hex:'Hexagone', diamond:'Losange', star:'Étoile', heart:'Cœur', tri:'Triangle', prism:'Lecture'};
 const SHAPE_NAMES = {rect:'Rectangle', round:'Rectangle arrondi', ellipse:'Ellipse', tri:'Triangle', star:'Étoile', hex:'Hexagone', diamond:'Losange', arrow:'Flèche', line:'Ligne', heart:'Cœur', bubble:'Bulle', ring:'Anneau', prism:'Prisme'};
 function mkMediaLayer(P, m, o = {}){
   const t = m.kind === 'audio' ? 'audio' : m.kind === 'video' ? 'video' : 'image';
@@ -142,7 +143,7 @@ function cleanProject(j){
     } else {
       if (!P.media[l0.media]) continue;
       Object.assign(L, {media:l0.media, in:clamp(num(l0.in), 0, 36000), speed:clamp(num(l0.speed, 1), .1, 16), vol:clamp(num(l0.vol, 1), 0, 2), mute:!!l0.mute, fadeIn:clamp(num(l0.fadeIn), 0, 60), fadeOut:clamp(num(l0.fadeOut), 0, 60),
-        fit:['cover', 'contain', 'fill'].includes(l0.fit) ? l0.fit : 'contain', flipX:!!l0.flipX, flipY:!!l0.flipY, r:clamp(num(l0.r), 0, 4000), filter:FILTERS[l0.filter] ? l0.filter : 'none', adj:{}, crop:null});
+        fit:['cover', 'contain', 'fill'].includes(l0.fit) ? l0.fit : 'contain', mask:MASKS[l0.mask] ? l0.mask : 'none', flipX:!!l0.flipX, flipY:!!l0.flipY, r:clamp(num(l0.r), 0, 4000), filter:FILTERS[l0.filter] ? l0.filter : 'none', adj:{}, crop:null});
       for (const k of Object.keys(ADJ_KEYS)) if (isNum(+l0.adj?.[k]) && +l0.adj[k]) L.adj[k] = clamp(+l0.adj[k], ADJ_KEYS[k][1], ADJ_KEYS[k][2]);
       const c = l0.crop; if (c && [c.x, c.y, c.w, c.h].every(v => isNum(+v)) && +c.w > .01 && +c.h > .01) L.crop = {x:clamp(+c.x, 0, 1), y:clamp(+c.y, 0, 1), w:clamp(+c.w, .01, 1), h:clamp(+c.h, .01, 1)};
     }

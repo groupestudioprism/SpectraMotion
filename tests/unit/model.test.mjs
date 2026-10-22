@@ -51,3 +51,9 @@ test('historique : annuler et rétablir', () => {
   assert.equal(M.HIST.redo().P.title, 'A'); assert.equal(M.HIST.commit(JSON.parse(M.HIST.last), 'rien'), false, 'pas d\'entrée sans changement');
 });
 test('timecode', () => { assert.equal(M.fmtTC(61.5, 30), '00:01:01:15'); assert.equal(M.fmtT(75.5), '1:15.5'); });
+test('masques de forme : valeur connue gardée, valeur inconnue remplacée', () => {
+  const P = M.newProject('photo'); P.media.med1 = {id:'med1', kind:'image', name:'a.png', mime:'image/png', size:10, w:100, h:100};
+  const L = M.mkMediaLayer(P, P.media.med1); L.mask = 'ellipse'; const B = M.mkMediaLayer(P, P.media.med1); B.mask = '<svg onload=x>';
+  P.layers.push(L, B); const C = M.cleanProject(JSON.parse(JSON.stringify(P)));
+  assert.equal(C.layers[0].mask, 'ellipse'); assert.equal(C.layers[1].mask, 'none');
+});

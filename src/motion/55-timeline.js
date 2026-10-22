@@ -7,6 +7,9 @@ const TL = {
   init(){
     this.el = $('#smTl'); this.heads = $('#tlHeads'); this.lanes = $('#tlLanes'); this.ruler = $('#tlRuler'); this.ph = $('#tlPh'); this.time = $('#tlTime');
     this.lanes.addEventListener('pointerdown', e => this.down(e));
+    // double-clic sur une image clé : change sa courbe (douce → linéaire → accélération → décélération → maintien)
+    this.lanes.addEventListener('dblclick', e => { const kf = e.target.closest('[data-kf]'); if (!kf || ED.readOnly) return; const c = this.P.layers.find(l => l.id === kf.dataset.id), k = c?.kf?.[kf.dataset.kf]?.[+kf.dataset.i]; if (!k) return;
+      const order = ['ease', 'lin', 'in', 'out', 'hold']; k[2] = order[(order.indexOf(k[2] || 'ease') + 1) % order.length]; ED.commit('Courbe : ' + EASES[k[2]]); toast('Courbe de l\'image clé : ' + EASES[k[2]], 1500); });
     this.ruler.addEventListener('pointerdown', e => this.scrubStart(e));
     window.addEventListener('pointermove', e => this.move(e));
     window.addEventListener('pointerup', e => this.up(e));
@@ -49,13 +52,13 @@ const TL = {
           const lab2 = {x:'Position X', y:'Position Y', sc:'Échelle', rot:'Rotation', op:'Opacité'}[p], on = hasKf(c, p), here = kfAt(c, p, PLAY.t - c.start);
           H += `<div class="tl-hd lane" style="height:${this.laneH}px"><button type="button" class="kf-tg${on ? ' on' : ''}" data-kft="${p}" data-id="${c.id}" title="${on ? 'Arrêter l\'animation de cette propriété (supprime ses images clés)' : 'Animer cette propriété'}">${ico('anim')}</button><span>${lab2}</span>
             <button type="button" class="kf-add${here ? ' on' : ''}" data-kfa="${p}" data-id="${c.id}" title="${here ? 'Supprimer l\'image clé à la tête de lecture' : 'Ajouter une image clé à la tête de lecture'}">${ico('key')}</button></div>`;
-          L += `<div class="tl-lane" style="top:${y}px;height:${this.laneH}px;width:${W}px">` + (c.kf?.[p] || []).map((k, i) => `<i class="kf ${k[2] || 'ease'}" data-kf="${p}" data-i="${i}" data-id="${c.id}" style="left:${this.x(c.start + k[0])}px" title="${lab2} : ${round(k[1], 2)} à ${fmtT(c.start + k[0])} · ${EASES[k[2] || 'ease']}"></i>`).join('') + '</div>';
+          L += `<div class="tl-lane" style="top:${y}px;height:${this.laneH}px;width:${W}px">` + (c.kf?.[p] || []).map((k, i) => `<i class="kf ${k[2] || 'ease'}" data-kf="${p}" data-i="${i}" data-id="${c.id}" style="left:${this.x(c.start + k[0])}px" title="${lab2} : ${round(k[1], 2)} à ${fmtT(c.start + k[0])} · courbe ${EASES[k[2] || 'ease']} (double-clic : changer · Alt + clic : supprimer)"></i>`).join('') + '</div>';
           y += this.laneH;
         }
       }
     }
     L += `<div class="tl-end" style="left:${this.x(end)}px;height:${y}px" title="Fin du projet"></div>`;
-    this.heads.innerHTML = H + `<div class="tl-hd add"><button type="button" data-th="addv">+ Piste</button><button type="button" data-th="adda">+ Audio</button></div>`;
+    this.heads.innerHTML = H + `<div class="tl-hd add"><button type="button" data-th="addv" title="Ajouter un titre sur une nouvelle piste, à la tête de lecture">+ Titre</button><button type="button" data-th="adda" title="Importer un son sur une nouvelle piste audio">+ Son</button></div>`;
     this.lanes.querySelector('.tl-in').innerHTML = L; this.lanes.querySelector('.tl-in').style.height = (y + 44) + 'px'; this.lanes.querySelector('.tl-in').style.width = W + 'px';
     this.drawWaves(); this.drawRuler(); this.playhead(PLAY.t);
   },

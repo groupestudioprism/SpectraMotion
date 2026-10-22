@@ -158,7 +158,7 @@ function renderFrame(ctx, P, t, o = {}){
       const el = o.els ? o.els[L.id] : MEDIA.el(m);
       if (!el || (L.t === 'video' && el.readyState < 2)){ if (!el && (!m || MEDIA.missing(m) || o.final)) drawMissing(ctx, w, h, m, 1); }
       else {
-        if (L.r){ roundRect(ctx, 0, 0, w, h, L.r); ctx.clip(); }
+        if (L.mask && L.mask !== 'none'){ shapePath(ctx, L.mask, w, h, Math.min(w, h) * .18); ctx.clip('evenodd'); } else if (L.r){ roundRect(ctx, 0, 0, w, h, L.r); ctx.clip(); }
         const a = adjOf(L), fc = filterCss(a, s.blur * scale);
         if (fc !== 'none' && SUPPORTS_FILTER) ctx.filter = fc;
         const box = drawMedia(ctx, L, el, m, w, h);
