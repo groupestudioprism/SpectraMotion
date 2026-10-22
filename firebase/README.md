@@ -1,22 +1,28 @@
 # Firebase de Spectra Motion — à publier À LA MAIN
 
-Spectra Motion ne publie rien lui-même. Ce dossier contient :
+Spectra Motion ne publie rien lui-même. Depuis le 22/10/2026, **toutes les règles du projet Firebase vivent dans un seul dépôt : Studio-Prism** (un projet Firebase n'a qu'un fichier de règles en ligne, partagé par le site et toutes les apps). Ce dossier ne garde donc que :
 
 | Fichier | Rôle |
 | --- | --- |
-| `firestore.rules` | **fichier complet** à coller dans *Console Firebase → Firestore Database → Règles* : règles communes Studio Prism (site, ARCHIPLAN, ARCHITRAFIC, ARCHIINDUS, SPECTRA Writer / Calc / Slide, NEXUS) **+ bloc Spectra Motion**. 177 Ko (limite Firebase : 256 Ko). |
-| `firestore-spectramotion.rules` | le bloc Spectra Motion seul (pour mémoire, ou pour l'insérer à la main) |
-| `storage.rules` | **fichier complet** à coller dans *Console → Storage → Règles* : médiathèque du site (inchangée) **+ médias des projets Spectra Motion** |
-| `storage-spectramotion.rules` | le bloc Storage seul (pour mémoire) |
+| `README.md` | ce mode d'emploi |
 | `storage-cors.json` | autorisation de téléchargement des médias depuis l'app (CORS du bucket) |
+| `firestore.rules`, `storage.rules` | **copies non suivies**, téléchargées par `npm run test:rules` (`tools/fetch_rules.py`) pour les émulateurs |
+
+Les règles de Spectra Motion, dans le dépôt **Studio-Prism**, branche `integration-spectra-motion` (à fusionner dans `main`) :
+
+| Fichier (Studio-Prism) | Contenu |
+| --- | --- |
+| `firebase/rules/23-spectra-motion.rules` | le bloc Spectra Motion (`sm*`) |
+| `firebase/rules/30-nexus.rules` | `spectramotion` ajouté aux apps que NEXUS peut connecter |
+| `firebase/firestore.rules` | le fichier complet, assemblé par `python3 tools/build_rules.py` (166 Ko, limite 256 Ko) |
+| `storage.rules` | médiathèque du site (inchangée) + médias des projets Spectra Motion |
 
 ## 1. Règles Firestore (obligatoire pour le cloud)
 
-Le fichier complet part de la version la plus récente des dépôts (celle de NEXUS, 22/10/2026, qui contient déjà le site, la gamme Archi et les trois SPECTRA). Aucune règle existante n'est modifiée, sauf la liste des applications que NEXUS peut connecter, à laquelle `spectramotion` est ajouté.
+1. Fusionner la branche `integration-spectra-motion` de Studio-Prism, puis dans ce dépôt-là : `python3 tools/build_rules.py` (contrôle que chaque app garde ses collections).
+2. Publier **le fichier complet** `firebase/firestore.rules` : `firebase deploy --only firestore:rules` depuis Studio-Prism, ou console Firebase → **Firestore Database → Règles** → tout remplacer → **Publier**.
 
-1. Console Firebase → **Firestore Database → Règles**. Cherchez `match /nxUsers/{uid}` :
-   - **présent** → remplacez tout le contenu par `firebase/firestore.rules`, puis **Publier** ;
-   - **absent** (NEXUS pas encore publié) ou règles modifiées en ligne depuis → ne remplacez pas : copiez `firestore-spectramotion.rules` et collez-le **juste avant** le bloc final `match /{document=**} { allow read, write: if false; }`, puis **Publier**.
+Aucune règle existante n'est modifiée, sauf la liste des applications que NEXUS peut connecter.
 
 Collections ajoutées : `smDocs/{id}` (+ `content/main`), `smFolders`, `smShares`, `smGrants`, `smUsage/{uid}`, `smLibrary/{uid}`. Licence : `licenses/{uid}_spectramotion`.
 
@@ -32,10 +38,10 @@ Ce que les règles imposent :
 Sans Storage, les médias restent dans l'appareil où ils ont été importés (IndexedDB), le projet lui-même est dans Firestore : sur un autre appareil, les médias apparaissent « manquants » et peuvent être reliés. Avec Storage, ils suivent le projet.
 
 1. Console → **Build → Storage → Commencer**. **Le forfait Blaze (paiement à l'usage) est exigé par Google pour créer un nouveau bucket** : ne le faites que si vous l'acceptez (le quota gratuit de Storage reste appliqué sur Blaze). Le site utilise le même bucket pour sa médiathèque : s'il est déjà activé, rien à faire.
-2. Onglet **Règles** → remplacer tout par `firebase/storage.rules` → **Publier**. La console propose d'accorder à Storage le droit de lire Firestore (rôle « Firebase Rules Firestore Service Agent ») : **acceptez**, les règles en ont besoin.
+2. Onglet **Règles** → remplacer tout par `storage.rules` du dépôt Studio-Prism (ou `firebase deploy --only storage` depuis ce dépôt) → **Publier**. La console propose d'accorder à Storage le droit de lire Firestore (rôle « Firebase Rules Firestore Service Agent ») : **acceptez**, les règles en ont besoin.
 3. **CORS** (sinon l'app ne peut pas relire les fichiers) — dans Google Cloud Shell :
    ```bash
-   gcloud storage buckets update gs://archivision-studioprism.firebasestorage.app --cors-file=storage-cors.json
+   gcloud storage buckets update gs://archivision-studioprism.firebasestorage.app --cors-file=storage-cors.json   # fichier de ce dossier
    ```
    (adaptez la liste `origin` si l'app est publiée sur un autre domaine).
 
@@ -52,7 +58,7 @@ Administration du site → Produits → **Nouveau produit** : identifiant `spect
 
 ## 4. Domaines autorisés
 
-*Authentication → Settings → Authorized domains* : `groupestudioprism.github.io` est déjà autorisé pour les autres apps. Ajoutez le domaine personnalisé s'il y en a un (par exemple `spectramotion.studio-prism.com`).
+*Authentication → Settings → Authorized domains* : `groupestudioprism.github.io` est déjà autorisé pour les autres apps. Les autres SPECTRA sont sur `*.studio-prism.com` : ajoutez `spectramotion.studio-prism.com` quand il existera.
 
 ## Vérifier après publication
 

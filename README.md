@@ -6,7 +6,7 @@ Un projet est **un seul fichier** que l'on regarde avec cinq studios : un titre 
 
 > Version 0.1.0 · interface en français · site statique (GitHub Pages) · Firebase (Authentication, Firestore, Storage facultatif) · aucun serveur.
 > **Démo autonome** (comptes et projets dans le navigateur, sans Firebase) : `dist/spectramotion-demo.html`.
-> **En ligne** : l'adresse sera `https://groupestudioprism.github.io/SpectraMotion/` une fois GitHub Pages activé sur ce dépôt (non vérifiée à ce jour).
+> **En ligne** : pas encore publiée. Comme les autres SPECTRA (`spectrawriter.studio-prism.com`…), l'adresse prévue est `spectramotion.studio-prism.com` : il faut activer GitHub Pages sur ce dépôt, créer l'entrée DNS puis ajouter le fichier `CNAME` (non fait : le sous-domaine n'existe pas encore).
 
 ![Identité visuelle](assets/branding/spectra-motion-planche.png)
 
@@ -60,7 +60,7 @@ src/motion/                l'atelier, un module par responsabilité :
   70-io.js                 exports image / vidéo / son / projet, ouverture des fichiers projet
   80-main.js               état de l'atelier, actions, raccourcis, pont avec le cloud
 assets/branding/           logo et déclinaisons (SVG + PNG), générés par tools/brand.py
-firebase/                  règles Firestore et Storage complètes + mode d'emploi (à publier À LA MAIN)
+firebase/                  mode d'emploi Firebase, CORS du bucket (les règles sont dans le dépôt Studio-Prism)
 tests/                     unitaires (Node), règles (émulateurs), bout en bout (Playwright)
 ```
 
@@ -86,7 +86,7 @@ Logo : `python3 tools/brand.py` régénère tous les fichiers de `assets/brandin
 ```bash
 npm install                            # outils de test uniquement (rien n'est nécessaire pour utiliser l'app)
 npm test                               # tests unitaires du modèle (Node ≥ 20)
-npm run test:rules                     # règles Firestore + Storage sur les émulateurs (Java ≥ 11)
+npm run test:rules                     # télécharge les règles depuis Studio-Prism, puis les teste sur les émulateurs (Java ≥ 11)
 python3 tools/build.py && npm run test:e2e   # bout en bout dans Chromium (Python + Playwright + ffmpeg)
 npx firebase emulators:exec --only auth,firestore,storage --project archivision-studioprism "python3 tests/e2e/firebase.py"
 ```
@@ -95,8 +95,8 @@ npx firebase emulators:exec --only auth,firestore,storage --project archivision-
 
 Rien n'est publié automatiquement. Le mode d'emploi complet, avec les scénarios de vérification, est dans [`firebase/README.md`](firebase/README.md) :
 
-1. **Règles Firestore** : coller tout `firebase/firestore.rules` (site + ARCHIPLAN + ARCHITRAFIC + ARCHIINDUS + SPECTRA Writer, Calc, Slide + NEXUS + **Spectra Motion**) puis Publier.
-2. **Storage (facultatif)** : l'activer dans la console (un nouveau bucket demande le forfait **Blaze**), publier `firebase/storage.rules`, autoriser l'accès de Storage à Firestore, appliquer la configuration CORS `firebase/storage-cors.json`. Sans Storage, les médias restent sur l'appareil.
+1. **Règles Firestore et Storage** : elles vivent dans leur **source unique**, le dépôt Studio-Prism (`firebase/rules/23-spectra-motion.rules`, assemblé dans `firebase/firestore.rules` ; `storage.rules` à la racine), sur la branche `integration-spectra-motion` tant qu'elle n'est pas fusionnée. Ce dépôt n'en garde pas de copie : `npm run test:rules` les télécharge.
+2. **Storage (facultatif)** : l'activer dans la console (un nouveau bucket demande le forfait **Blaze**), publier `storage.rules`, autoriser l'accès de Storage à Firestore, appliquer la configuration CORS `firebase/storage-cors.json`. Sans Storage, les médias restent sur l'appareil.
 3. **Catalogue** : créer le produit `spectramotion` (« Spectra Motion », description « Création photo, vidéo, animation et audio ») dans l'administration du site pour attribuer licences et clés.
 
 Tant que les règles ne sont pas publiées, l'app fonctionne quand même : les projets sont enregistrés **sur l'appareil**, rattachés au compte, et partent dans le cloud dès que possible.
@@ -105,4 +105,4 @@ La configuration Firebase écrite dans `index.html` est publique par conception 
 
 ## Intégration avec les autres applications
 
-Spectra Motion figure sur l'écran de connexion de Writer, Calc et Slide, dans le registre de Nexus et dans les liens du site Studio Prism : les modifications sont préparées sur des branches de ces dépôts (voir le rapport de livraison), à fusionner après vérification.
+Spectra Motion est ajouté (marqué « Bientôt », sans lien tant que l'adresse n'existe pas) sur l'écran de connexion de Writer, Calc et Slide, dans le registre de Nexus, dans les règles communes et la suppression de compte du site Studio Prism : les modifications sont sur une branche `integration-spectra-motion` de chacun de ces dépôts, à fusionner après vérification.

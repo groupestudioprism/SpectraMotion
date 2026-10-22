@@ -4,3 +4,5 @@ node_modules
 tests/e2e/out/
 firebase-debug.log
 firestore-debug.log
+firebase/firestore.rules
+firebase/storage.rules
