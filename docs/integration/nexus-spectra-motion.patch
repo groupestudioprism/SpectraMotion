@@ -1,0 +1,45 @@
+diff --git a/src/connectors/registry.js b/src/connectors/registry.js
+index e957c4d..9972af4 100644
+--- a/src/connectors/registry.js
++++ b/src/connectors/registry.js
+@@ -96,6 +96,18 @@ export const APPS = Object.freeze([
+     quota: "10 Mo sans licence, 50 Mo avec licence, 1 Go administrateur",
+     scopes: ["catalog.read", "projects.read", "shared.read"],
+     writes: []
++  },
++  {
++    id: "spectramotion", productId: "spectramotion", name: "Spectra Motion", family: "spectra",
++    tagline: "Création photo, vidéo, animation et audio",
++    url: "https://spectramotion.studio-prism.com/",
++    color: "#7B2FF7",
++    features: ["Cinq studios dans un seul projet : Design, Photo, Vidéo, Motion, Audio", "Timeline multipiste, images clés, voix off", "Exports image, vidéo (WebM / MP4), son (WAV) et paquet .zip", "Cloud des projets, dossiers et partage ; médias dans Firebase Storage"],
++    cloud: { prefix: "sm", items: "smDocs", shares: "smShares", kind: "document", noun: ["projet", "projets"] },
++    deepLink: (id) => `https://spectramotion.studio-prism.com/#/doc/${encodeURIComponent(id)}`,
++    quota: "10 Mo sans licence, 50 Mo avec licence, 1 Go administrateur",
++    scopes: ["catalog.read", "projects.read", "shared.read"],
++    writes: []
+   }
+ ]);
+ 
+diff --git a/src/workflows/templates.js b/src/workflows/templates.js
+index adb39b7..7103cc8 100644
+--- a/src/workflows/templates.js
++++ b/src/workflows/templates.js
+@@ -23,7 +23,7 @@ export const TEMPLATES = [
+     description: "Rassemble l'activité de la semaine dans toutes les applications connectées, demande une synthèse à AXION et la dépose dans SPECTRA Writer après confirmation.",
+     needsAxion: true,
+     build: () => [
+-      step("collect", { apps: ["archiplan", "architrafic", "spectrawriter", "spectracalc", "spectraslide"], includeShared: true, max: 200 }, "t1"),
++      step("collect", { apps: ["archiplan", "architrafic", "spectrawriter", "spectracalc", "spectraslide", "spectramotion"], includeShared: true, max: 200 }, "t1"),
+       step("filter", { days: 7, contains: "" }, "t2"),
+       step("summarize", { instruction: "Fais une synthèse courte de l'activité de la semaine : ce qui a avancé, par application, et ce qui semble en attente." }, "t3"),
+       step("report", { title: "Synthèse de la semaine", groupByApp: true }, "t4"),
+@@ -37,7 +37,7 @@ export const TEMPLATES = [
+     description: "Compose la liste de vos documents, classeurs et présentations (partages compris), sans rien écrire.",
+     needsAxion: false,
+     build: () => [
+-      step("collect", { apps: ["spectrawriter", "spectracalc", "spectraslide"], includeShared: true, max: 300 }, "t1"),
++      step("collect", { apps: ["spectrawriter", "spectracalc", "spectraslide", "spectramotion"], includeShared: true, max: 300 }, "t1"),
+       step("report", { title: "Inventaire de mes documents SPECTRA", groupByApp: true }, "t2")
+     ]
+   }
