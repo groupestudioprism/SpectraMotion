@@ -129,6 +129,8 @@ const FirebaseAuth = {
     this.db = firebase.firestore();
     // Réseaux d'entreprise, antivirus ou proxys qui bloquent le flux temps réel : bascule automatique (évite les attentes de plusieurs minutes)
     try { this.db.settings({experimentalAutoDetectLongPolling:true, merge:true}); } catch(e){}
+    // tests automatiques uniquement : émulateurs Firebase locaux (http://localhost…/?emu=1), jamais en ligne
+    if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && new URLSearchParams(location.search).get('emu') === '1'){ this.fa.useEmulator('http://127.0.0.1:9099'); this.db.useEmulator('127.0.0.1', 8085); window.__SM_EMU = true; }
     this.ts = () => firebase.firestore.FieldValue.serverTimestamp();
   },
   norm(u){ if (!u) return null; const [f, ...l] = (u.displayName || '').split(' '); return {uid:u.uid, email:u.email, firstName:f || '', lastName:l.join(' '), verified:u.emailVerified}; },

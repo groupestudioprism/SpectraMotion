@@ -7,7 +7,7 @@
   "scripts": {
     "build": "python3 tools/build.py",
     "brand": "python3 tools/brand.py",
-    "test": "node --test tests/unit/",
+    "test": "node --test tests/unit/*.test.mjs",
     "test:rules": "firebase emulators:exec --only firestore,storage --project demo-spectramotion \"node tests/rules/rules.test.mjs\"",
     "test:e2e": "python3 tests/e2e/run.py"
   },

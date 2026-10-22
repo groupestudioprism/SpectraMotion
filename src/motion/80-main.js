@@ -107,6 +107,7 @@ const ED = {
     if (!ok) return;
     this.commit('Importer des médias');
     if (o.add !== false) for (const m of added) this.addMedia(m, o.atHead);
+    if (TIMED(this.studio)) requestAnimationFrame(() => { const vis = TL.lanes.clientWidth / TL.pps; if (PLAY.end() > vis * .95 || PLAY.end() < vis * .25) TL.fitAll(); });
     if (PANEL.cur !== 'media' && PANEL.cur !== 'audio' && PANEL.open) PANEL.render();
     toast(`${ok} média${ok > 1 ? 's' : ''} importé${ok > 1 ? 's' : ''}`);
     this.uploadPending();

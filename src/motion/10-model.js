@@ -52,7 +52,7 @@ const STUDIO_FORMAT = {design:'square', photo:'photo32', video:'hd', motion:'hd'
 
 function newProject(studio = 'design', fmt){
   const f = typeof fmt === 'object' && fmt ? fmt : FORMATS.find(x => x.id === (fmt || STUDIO_FORMAT[studio])) || FORMATS[0];
-  return {v:1, app:'spectramotion', title:'Projet sans titre', studio, w:f.w, h:f.h, fps:30, dur:studio === 'audio' ? 30 : TIMED(studio) ? 10 : 5, bg:studio === 'audio' ? '#101018' : '#FFFFFF', fmt:f.id || '', media:{}, layers:[]};
+  return {v:1, app:'spectramotion', title:'Projet sans titre', studio, w:f.w, h:f.h, fps:30, dur:studio === 'audio' ? 30 : TIMED(studio) ? 10 : 5, bg:studio === 'audio' ? '#101018' : studio === 'video' || studio === 'motion' ? '#000000' : '#FFFFFF', fmt:f.id || '', media:{}, layers:[]};
 }
 /* ---------- calques ---------- */
 function baseLayer(P, t, o = {}){

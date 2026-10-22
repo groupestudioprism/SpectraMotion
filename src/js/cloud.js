@@ -111,7 +111,7 @@ function storage(){
   return storP ||= (async () => {
     if (cloudMode !== 'firebase' || !window.firebase) throw {code:'app/no-storage'};
     if (!firebase.storage) await loadScript(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-storage-compat.js`);
-    return firebase.storage();
+    const st = firebase.storage(); if (window.__SM_EMU) st.useEmulator('127.0.0.1', 9199); return st;
   })().catch(e => { storP = null; throw e; });
 }
 const extOfMedia = (m, blob) => { const n = String(m.name || '').toLowerCase().match(/\.([a-z0-9]{2,5})$/); if (n) return n[1]; const t = (m.mime || blob?.type || '').split('/')[1] || 'bin'; return t.replace(/[^a-z0-9]/g, '').slice(0, 5) || 'bin'; };

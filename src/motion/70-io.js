@@ -111,7 +111,8 @@ const IO = {
     rec.stop(); await stopped; tracks.forEach(t => t.stop());
     if (this.cancel) return;
     prog(1, 'Finalisation…');
-    const blob = new Blob(chunks, {type:type[1].split(';')[0]}); if (!blob.size) throw new Error('Aucune image enregistrée : réessayez en gardant l\'onglet visible.');
+    let blob = new Blob(chunks, {type:type[1].split(';')[0]}); if (!blob.size) throw new Error('Aucune image enregistrée : réessayez en gardant l\'onglet visible.');
+    if (type[0] === 'webm') try { blob = await webmWithDuration(blob, end); } catch(e){ console.warn('[Spectra Motion] durée WebM', e); }
     await this.save(`${this.fileBase()}.${type[0]}`, blob);
     if (lost.length) toast(`Attention : le son de ${lost.length} clip${lost.length > 1 ? 's' : ''} n'a pas pu être décodé et manque dans la vidéo.`, 6000);
     PLAY.still();
@@ -137,6 +138,29 @@ const IO = {
     if (miss) toast(`${miss} média${miss > 1 ? 's absents' : ' absent'} de cet appareil : non inclus dans le paquet.`, 5000);
   },
 };
+/* Les WebM de MediaRecorder n'indiquent pas leur durée (lecture et avance rapide difficiles dans certains lecteurs) :
+   on ajoute l'élément Duration dans Segment › Info, sans réencoder. */
+async function webmWithDuration(blob, seconds){
+  const head = new Uint8Array(await blob.slice(0, Math.min(blob.size, 65536)).arrayBuffer());
+  const vint = (b, i) => { const f = b[i]; let n = 1; while (n <= 8 && !(f & (0x80 >> (n - 1)))) n++; if (n > 8) throw new Error('vint'); let v = f & (0xFF >> n); for (let k = 1; k < n; k++) v = v * 256 + b[i + k]; return {v, n, unknown:v === 2 ** (7 * n) - 1}; };
+  const id = (b, i) => { const f = b[i]; const n = f >= 0x80 ? 1 : f >= 0x40 ? 2 : f >= 0x20 ? 3 : 4; let v = 0; for (let k = 0; k < n; k++) v = v * 256 + b[i + k]; return {v, n}; };
+  let i = 0; const e0 = id(head, i); if (e0.v !== 0x1A45DFA3) throw new Error('pas un WebM'); const s0 = vint(head, i + e0.n); i += e0.n + s0.n + s0.v;
+  const seg = id(head, i); if (seg.v !== 0x18538067) throw new Error('segment'); const ss = vint(head, i + seg.n); const segData = i + seg.n + ss.n; i = segData;
+  while (i < head.length - 8){
+    const el = id(head, i), sz = vint(head, i + el.n), data = i + el.n + sz.n;
+    if (el.v === 0x1549A966){ // Info
+      if (data + sz.v > head.length) throw new Error('Info incomplet');
+      let j = data, scale = 1e6; while (j < data + sz.v){ const c = id(head, j), cs = vint(head, j + c.n); if (c.v === 0x4489) return blob; if (c.v === 0x2AD7B1){ let v = 0; for (let k = 0; k < cs.v; k++) v = v * 256 + head[j + c.n + cs.n + k]; scale = v; } j += c.n + cs.n + cs.v; }
+      const dur = new Uint8Array(11); dur.set([0x44, 0x89, 0x88]); new DataView(dur.buffer).setFloat64(3, seconds * 1e9 / scale);
+      const newSize = sz.v + dur.length, n = Math.max(sz.n, newSize < 127 ? 1 : newSize < 16383 ? 2 : 4), szb = new Uint8Array(n); let v = newSize;
+      for (let k = n - 1; k >= 0; k--){ szb[k] = v & 0xFF; v = Math.floor(v / 256); } szb[0] |= 0x80 >> (n - 1);
+      const before = head.slice(0, i + el.n), content = head.slice(data, data + sz.v);
+      return new Blob([before, szb, content, dur, blob.slice(data + sz.v)], {type:blob.type});
+    }
+    if (sz.unknown) break; i = data + sz.v;
+  }
+  throw new Error('Info introuvable');
+}
 const extOf = m => { const n = m.name.match(/\.[a-z0-9]{2,5}$/i); return n ? n[0].toLowerCase() : m.kind === 'image' ? '.png' : m.kind === 'video' ? '.mp4' : '.mp3'; };
 function wavOf(buf){
   const ch = Math.min(2, buf.numberOfChannels), n = buf.length, sr = buf.sampleRate, out = new DataView(new ArrayBuffer(44 + n * ch * 2));
