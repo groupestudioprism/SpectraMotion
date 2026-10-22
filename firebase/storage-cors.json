@@ -1,0 +1,8 @@
+[
+  {
+    "origin": ["https://groupestudioprism.github.io", "https://spectramotion.studio-prism.com", "http://localhost:8000"],
+    "method": ["GET", "HEAD"],
+    "responseHeader": ["Content-Type", "Content-Length", "Range"],
+    "maxAgeSeconds": 3600
+  }
+]

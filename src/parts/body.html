@@ -1,0 +1,133 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs><!--SYMBOL--></defs>
+</svg>
+<div id="splash" role="status" aria-live="polite">
+  <div class="sp-aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="sp-center">
+    <div class="sp-mark"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="#swMark"/></svg><i class="sp-shine"></i></div>
+    <div class="sp-word"><b>SPECTRA</b><span>Motion</span></div>
+    <p class="sp-tag">Créer, monter, animer.</p>
+  </div>
+  <div class="sp-bar" aria-hidden="true"><i></i></div>
+  <p class="sp-msg" id="spMsg">Préparation de votre studio de création…</p>
+</div>
+
+<div id="auth" hidden>
+  <aside class="ap-side">
+    <div class="ap-aurora" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <div class="ap-brand"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="#swMark"/></svg><div><b>SPECTRA</b><span>Motion</span></div></div>
+    <div class="ap-pitch"><h1>Photo, vidéo, animation et son, dans un seul studio.</h1><p>Retouchez une image, montez une vidéo sur plusieurs pistes, animez un titre image par image et mixez vos sons, avec des outils faciles à prendre en main. Vos projets vous suivent sur tous vos appareils.</p></div>
+    <ul class="ap-apps">
+      <li><a class="ap-ic w" href="https://groupestudioprism.github.io/SpectraWriter/" aria-label="SPECTRA Writer"></a><b>SPECTRA Writer</b><span>Traitement de texte</span><em>Disponible</em></li>
+      <li><a class="ap-ic c" href="https://groupestudioprism.github.io/SpectraCalc/" aria-label="SPECTRA Calc"></a><b>SPECTRA Calc</b><span>Tableur</span><em>Disponible</em></li>
+      <li><a class="ap-ic s" href="https://groupestudioprism.github.io/SpectraSlide/" aria-label="SPECTRA Slide"></a><b>SPECTRA Slide</b><span>Présentations</span><em>Disponible</em></li>
+      <li><span class="ap-ic m"><svg viewBox="0 0 64 64"><use href="#swMark"/></svg></span><b>Spectra Motion</b><span>Création photo, vidéo, animation et audio</span><em>Vous êtes ici</em></li>
+    </ul>
+    <p class="ap-foot">Un seul compte Studio Prism pour SPECTRA, ARCHIPLAN, Archi Vision et toutes les apps du studio.</p>
+  </aside>
+  <main class="ap-main"><div class="ap-card" id="apCard" aria-live="polite"></div></main>
+</div>
+<script>setTimeout(function(){if(!window.__swReady){var m=document.getElementById('spMsg');if(m){m.textContent="Le studio de création n'a pas pu se charger. Vérifiez la connexion, puis rechargez la page.";m.classList.add('err');}}},15000);</script>
+
+<section id="home" hidden aria-label="Accueil Spectra Motion">
+  <header class="hm-top">
+    <div class="hm-brand"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="#swMark"/></svg><span>SPECTRA <em>Motion</em></span></div>
+    <nav class="hm-tabs" id="homeNav" aria-label="Navigation">
+      <button type="button" data-htab="home">Accueil</button>
+      <button type="button" data-htab="mine">Mes projets</button>
+      <button type="button" data-htab="shared">Partagés avec moi</button>
+      <button type="button" data-htab="templates">Modèles</button>
+    </nav>
+    <span class="hm-sp"></span>
+    <button type="button" id="homeLic" class="hm-lic" hidden>Offre gratuite</button>
+    <button type="button" class="avatar" id="homeUser" aria-haspopup="true" aria-label="Mon compte"></button>
+  </header>
+  <div class="hm-main" id="homeMain">
+    <section class="hm-start" id="homeHero">
+      <h1 id="homeHello">Bonjour</h1>
+      <div class="hm-ask" id="homeAskBox">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg>
+        <input id="homeAsk" type="text" autocomplete="off" spellcheck="false" placeholder="Que voulez-vous créer ? Une story, un montage, une affiche…" aria-label="Que voulez-vous créer ?">
+        <kbd>Entrée</kbd>
+        <div class="hm-ask-res" id="homeAskRes" hidden role="listbox"></div>
+      </div>
+      <div class="hm-quick hm-studios">
+        <button type="button" data-tpl="blank-design"><svg viewBox="0 0 24 24"><path d="M4 20 15 9M14 4l6 6-3 3-6-6zM4 20l2-6 4 4z"/></svg><span><b>Design</b><small>Visuels, réseaux sociaux</small></span></button>
+        <button type="button" data-tpl="blank-photo"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="15" rx="2"/><circle cx="12" cy="12.5" r="3.5"/><path d="M8 5l1.5-2h5L16 5"/></svg><span><b>Photo</b><small>Retouche, composition</small></span></button>
+        <button type="button" data-tpl="blank-video"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg><span><b>Vidéo</b><small>Montage multipiste</small></span></button>
+        <button type="button" data-tpl="blank-motion"><svg viewBox="0 0 24 24"><path d="M5 19c3-8 6-12 14-14"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/></svg><span><b>Motion</b><small>Animation, titres animés</small></span></button>
+        <button type="button" data-tpl="blank-audio"><svg viewBox="0 0 24 24"><path d="M9 18V6l11-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><span><b>Audio</b><small>Pistes, voix off, mixage</small></span></button>
+        <button type="button" data-hact="import" class="imp"><svg viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M5 21h14"/></svg><span><b>Ouvrir un fichier</b><small>Photo, vidéo, son ou projet</small></span></button>
+      </div>
+    </section>
+    <div class="hm-title" id="homeTitle" hidden></div>
+    <div class="h-offer" id="homeOffer" hidden></div>
+    <main class="h-body" id="homeBody"></main>
+    <footer class="hm-foot"><aside class="h-quota" id="homeQuota" aria-live="polite"></aside></footer>
+    <div class="h-dropzone" aria-hidden="true"><div><svg viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M5 21h14"/></svg><b>Déposez le fichier pour l'ouvrir</b><span>Photo, vidéo, son, projet .spectramotion ou paquet .zip</span></div></div>
+  </div>
+  <div class="h-busy" id="homeBusy" hidden><div class="ap-spin" aria-hidden="true"></div><span></span></div>
+  <input type="file" id="homeFile" accept="image/*,video/*,audio/*,.spectramotion,.zip,.json,.mp3,.wav,.m4a,.mov" hidden>
+</section>
+
+<div id="app" hidden data-studio="design">
+  <header class="ed-top">
+    <button type="button" class="ed-home" id="homeBtn" title="Retour à l'accueil" aria-label="Retour à l'accueil"><svg viewBox="0 0 64 64"><use href="#swMark"/></svg></button>
+    <div class="ed-doc"><input id="docTitle" class="ed-title" value="Projet sans titre" aria-label="Titre du projet" spellcheck="false" maxlength="120"><div class="ed-meta"><button type="button" class="ed-menu" id="fileBtn" aria-haspopup="true">Fichier</button><span id="cloudState" class="cs" hidden></span></div></div>
+    <nav class="st-nav" id="studioNav" role="tablist" aria-label="Studios"></nav>
+    <span class="ed-sp"></span>
+    <div class="ed-hist"><button type="button" class="ib" id="undoBtn" aria-label="Annuler"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button><button type="button" class="ib" id="redoBtn" aria-label="Rétablir"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button></div>
+    <button type="button" class="btn-ghost" id="shareBtn"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/></svg><span class="hide-s">Partager</span></button>
+    <button type="button" class="btn-prism" id="exportBtn"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span class="hide-s">Exporter</span></button>
+    <button type="button" id="licBadge" hidden title="Offre gratuite">Gratuit</button>
+    <button type="button" class="avatar" id="userBtn" hidden aria-haspopup="true" aria-label="Mon compte"></button>
+  </header>
+  <div class="sm-main">
+    <nav class="sm-rail" id="smRail" aria-label="Ressources"></nav>
+    <aside class="sm-panel" id="smPanel" aria-labelledby="smPanelTitle"><header><b id="smPanelTitle"></b><button type="button" class="ib" id="smPanelClose" aria-label="Fermer le panneau"><svg viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></svg></button></header><div class="sm-pbody" id="smPanelBody"></div></aside>
+    <main class="sm-stage" id="smStage" aria-label="Scène">
+      <div class="stg-wrap" id="stgWrap"><canvas id="stgCanvas"></canvas><div class="stg-ovl" id="stgOvl"></div></div>
+      <div class="stg-tools" role="toolbar" aria-label="Affichage">
+        <button type="button" id="stgPlay" class="ib" hidden aria-label="Lecture"></button><span id="stgTime" class="stg-t" hidden></span>
+        <button type="button" class="ib" id="stgSnap" aria-pressed="true" title="Repères magnétiques"><svg viewBox="0 0 24 24"><path d="M6 4v8a6 6 0 0 0 12 0V4h-4v8a2 2 0 0 1-4 0V4z"/><path d="M6 8h4M14 8h4"/></svg></button>
+        <button type="button" class="ib" id="stgZoomOut" aria-label="Dézoomer"><svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button><button type="button" id="stgFit" class="stg-z" title="Ajuster à la fenêtre (Ctrl + 0)"><span id="stgZoomV">100 %</span></button><button type="button" class="ib" id="stgZoomIn" aria-label="Zoomer"><svg viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg></button>
+      </div>
+    </main>
+    <aside class="sm-insp" id="smInsp" aria-label="Propriétés"><button type="button" class="ib sm-insp-t" id="smInspToggle" aria-pressed="true" title="Propriétés"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button><div class="sm-ibody" id="smInspBody"></div></aside>
+  </div>
+  <section class="sm-tl" id="smTl" hidden aria-label="Timeline">
+    <div class="tl-top">
+      <div class="tl-tr"><button type="button" class="ib" id="tlStart" title="Début (Début)"><svg viewBox="0 0 24 24"><path d="M6 5v14M19 5 9 12l10 7z"/></svg></button><button type="button" class="ib" id="tlPrev" title="Image précédente (←)"><svg viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></svg></button><button type="button" class="ib tl-play" id="tlPlay" aria-label="Lecture (Espace)"></button><button type="button" class="ib" id="tlNext" title="Image suivante (→)"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></button><button type="button" class="ib" id="tlEnd" title="Fin (Fin)"><svg viewBox="0 0 24 24"><path d="M18 5v14M5 5l10 7-10 7z"/></svg></button></div>
+      <output class="tl-time" id="tlTime">00:00:00:00</output>
+      <div class="tl-ed"><button type="button" class="tl-b" id="tlSplit" title="Couper à la tête de lecture (S)"><svg viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M8 7 4 12l4 5M16 7l4 5-4 5"/></svg><span>Couper</span></button><button type="button" class="tl-b" id="tlDel" title="Supprimer (Suppr)"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg><span>Supprimer</span></button>
+        <button type="button" class="tl-b" id="tlSnap" aria-pressed="true" title="Aimanter aux clips et à la tête de lecture"><svg viewBox="0 0 24 24"><path d="M6 4v8a6 6 0 0 0 12 0V4h-4v8a2 2 0 0 1-4 0V4z"/></svg><span>Aimant</span></button><button type="button" class="tl-b" id="tlLoop" aria-pressed="false" title="Lire en boucle"><svg viewBox="0 0 24 24"><path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/></svg><span>Boucle</span></button></div>
+      <span class="ed-sp"></span>
+      <label class="tl-zoom" title="Zoom de la timeline (Ctrl + molette)"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input type="range" id="tlZoom" min="4" max="600" step="1" value="60" aria-label="Zoom de la timeline"></label>
+      <button type="button" class="tl-b" id="tlFit" title="Tout afficher"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      <button type="button" class="ib" id="tlFold" aria-expanded="true" title="Replier la timeline"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+    </div>
+    <div class="tl-body">
+      <div class="tl-heads" id="tlHeads"></div>
+      <div class="tl-right"><canvas class="tl-ruler" id="tlRuler" height="26"></canvas><div class="tl-lanes" id="tlLanes"><div class="tl-in"></div></div><i class="tl-ph" id="tlPh"></i></div>
+    </div>
+  </section>
+  <div class="ed-busy" id="edBusy" hidden><div class="ap-spin" aria-hidden="true"></div><span></span></div>
+  <div class="drop-veil" aria-hidden="true"><div><svg viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M5 21h14"/></svg><b>Déposez vos fichiers</b><span>Images, vidéos et sons s'ajoutent au projet</span></div></div>
+  <input type="file" id="smFile" multiple hidden>
+</div>
+
+<div class="menu" id="edMenu" hidden></div>
+<div class="menu" id="userMenu" hidden>
+  <div class="who"><span class="avatar big" id="umAv"></span><div><b id="umName"></b><span id="umMail"></span></div></div><span class="lic" id="umLic"></span><hr>
+  <button data-um="home"><b>Accueil</b><span>Mes projets, modèles et partages</span></button>
+  <button data-um="licence"><b>Ma licence Spectra Motion</b><span>Droits liés à votre compte Studio Prism</span></button>
+  <button data-um="fiche"><b>Fiche client</b><span>Coordonnées partagées entre les apps Studio Prism</span></button>
+  <button data-um="security"><b>Code PIN et sécurité</b><span>Code PIN du compte, empreinte ou visage (facultatif)</span></button>
+  <button data-um="lock" id="umLock"><b>Verrouiller</b><span>Le code PIN sera demandé pour revenir</span></button>
+  <button data-um="theme"><b>Thème clair / sombre</b><span>Apparence de l'interface sur cet appareil</span></button>
+  <hr><button data-um="logout"><b>Se déconnecter</b><span>Sur cet appareil</span></button>
+  <button data-um="delete" class="danger"><b>Supprimer mon compte</b><span>Sur le site Studio Prism, avec mot de passe et code PIN</span></button>
+</div>
+<div class="menu" id="homeMenu" hidden></div>
+<div id="apDlg" hidden role="dialog" aria-modal="true"><div class="dlg-card"></div></div>
+<div id="toast" hidden role="status"></div>
