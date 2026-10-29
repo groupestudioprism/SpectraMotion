@@ -75,7 +75,7 @@ def main(argv):
     desc = 'Spectra Motion · Studio Prism : création photo, vidéo, animation et audio dans un seul studio.'
     (ROOT / 'dist').mkdir(exist_ok=True)
     # démo : expose l'état de l'atelier aux tests automatiques (jamais dans la version en ligne)
-    demo_body = body.replace('/*DEMO-HOOK*/', 'window.__SM = {ED, PLAY, MEDIA, TL, STAGE, IO, PANEL, INSP, HIST, cleanProject, renderFrame, tplProject, SM_TPL, layerState, measureText, IDB};', 1)
+    demo_body = body.replace('/*DEMO-HOOK*/', 'window.__SM = {ED, PLAY, MEDIA, TL, STAGE, IO, PANEL, INSP, HIST, PAGES, PIX, cleanProject, renderFrame, tplProject, SM_TPL, layerState, measureText, IDB, qrMatrix, docColors, recolor, pageCount, FORMATS, FONTS_M, ICON_SET, gifEncode, pdfOf};', 1)
     demo = head(desc).replace('<link rel="preload"', '<link rel="x-preload"') + demo_body.replace('<title>Spectra Motion</title>', '<title>Spectra Motion · démo</title>', 1) + '</body></html>\n'
     (ROOT / 'dist' / 'spectramotion-demo.html').write_text(demo.replace('href="assets/', 'href="../assets/').replace('href="manifest.webmanifest"', 'href="../manifest.webmanifest"'), encoding='utf-8')
     live = head(desc) + body.replace('/*DEMO-HOOK*/', '', 1).replace('const FIREBASE_CONFIG = null;', CONFIG).replace('<title>Spectra Motion</title>', '<title>Spectra Motion · Studio Prism</title>', 1) + '</body></html>\n'

@@ -17,7 +17,12 @@ function scheduleAudio(P, ac, dest, from, base, until = Infinity){
     g.gain.setValueAtTime(gv(t0), at(t0));
     const pts = []; if (L.fadeIn > 0) pts.push(a + L.fadeIn); if (L.fadeOut > 0) pts.push(L.start + L.dur - L.fadeOut, L.start + L.dur);
     pts.filter(p => p > t0 && p <= b).sort((x, y) => x - y).forEach(p => g.gain.linearRampToValueAtTime(gv(p), at(p)));
-    src.connect(g); g.connect(dest);
+    // égaliseur (graves / aigus) et panoramique, si réglés
+    let head = src;
+    if (L.eqLo){ const f = ac.createBiquadFilter(); f.type = 'lowshelf'; f.frequency.value = 220; f.gain.value = L.eqLo; head.connect(f); head = f; nodes.push(f); }
+    if (L.eqHi){ const f = ac.createBiquadFilter(); f.type = 'highshelf'; f.frequency.value = 3200; f.gain.value = L.eqHi; head.connect(f); head = f; nodes.push(f); }
+    head.connect(g);
+    if (L.pan && ac.createStereoPanner){ const pn = ac.createStereoPanner(); pn.pan.value = clamp(L.pan, -1, 1); g.connect(pn); pn.connect(dest); nodes.push(pn); } else g.connect(dest);
     try { src.start(at(t0), off, Math.max(0, (b - t0) * sp)); nodes.push(src, g); } catch(e){ console.warn('[Spectra Motion] son', e); }
   }
   return nodes;

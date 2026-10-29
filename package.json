@@ -1,6 +1,6 @@
 {
   "name": "spectramotion",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Spectra Motion · Studio Prism : création photo, vidéo, animation et audio dans le navigateur.",
   "type": "module",
@@ -9,7 +9,7 @@
     "brand": "python3 tools/brand.py",
     "test": "node --test tests/unit/*.test.mjs",
     "test:rules": "firebase emulators:exec --only firestore,storage --project demo-spectramotion \"node tests/rules/rules.test.mjs\"",
-    "test:e2e": "python3 tests/e2e/run.py",
+    "test:e2e": "python3 tests/e2e/run.py && python3 tests/e2e/features.py",
     "pretest:rules": "python3 tools/fetch_rules.py"
   },
   "devDependencies": {

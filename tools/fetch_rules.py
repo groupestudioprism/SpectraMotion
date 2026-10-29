@@ -15,12 +15,12 @@ def get(ref, path):
     with urllib.request.urlopen(BASE.format(ref=ref, path=path), timeout=60) as r: return r.read().decode('utf-8')
 def main():
     refs = [os.environ['SM_RULES_REF']] if os.environ.get('SM_RULES_REF') else ['main', 'integration-spectra-motion']
-    for ref in refs:
-        try: got = {dst: get(ref, src) for src, dst in FILES.items()}
-        except Exception as e: print(f'{ref} : indisponible ({e})'); continue
-        if 'match /smDocs/' in got['firebase/firestore.rules'] and 'spectramotion/' in got['firebase/storage.rules']:
-            for dst, txt in got.items(): (ROOT / dst).write_text(txt, encoding='utf-8')
-            print(f'Règles Studio-Prism ({ref}) -> firebase/firestore.rules, firebase/storage.rules'); return
-        print(f'{ref} : pas encore de bloc Spectra Motion')
-    sys.exit('Règles introuvables : vérifier la branche Studio-Prism (SM_RULES_REF).')
+    marks = {'firebase/firestore.rules': 'match /smDocs/', 'storage.rules': 'spectramotion/'}
+    for src, dst in FILES.items():
+        for ref in refs:  # chaque fichier vient de la première branche qui contient le bloc Spectra Motion
+            try: txt = get(ref, src)
+            except Exception as e: print(f'{src} @ {ref} : indisponible ({e})'); continue
+            if marks[src] in txt: (ROOT / dst).write_text(txt, encoding='utf-8'); print(f'{src} @ {ref} -> {dst}'); break
+            print(f'{src} @ {ref} : pas encore de bloc Spectra Motion')
+        else: sys.exit(f'{src} : règles introuvables (SM_RULES_REF ?)')
 main()

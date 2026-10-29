@@ -52,6 +52,10 @@ const IC = {
   vol:'<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/>', mute:'<path d="M4 9v6h4l5 4V5L8 9z"/><path d="m17 9 5 6M22 9l-5 6"/>',
   more:'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>', check:'<path d="m5 12 5 5 9-10"/>',
   align:'<path d="M4 4v16M8 8h10M8 16h6"/>', select:'<path d="m5 3 14 8-6 2-2 6z"/>', hand:'<path d="M8 12V5a1.5 1.5 0 0 1 3 0v6M11 10V4a1.5 1.5 0 0 1 3 0v7M14 11V6a1.5 1.5 0 0 1 3 0v8a7 7 0 0 1-7 7 6 6 0 0 1-5-2.7L3 15a1.5 1.5 0 0 1 2.3-2L8 15"/>',
-  speed:'<path d="M12 14l4-4"/><path d="M4.2 18a9 9 0 1 1 15.6 0"/>', bg:'<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 15l6-6 12 12"/>',
+  speed:'<path d="M12 14l4-4"/><path d="M4.2 18a9 9 0 1 1 15.6 0"/>',
+  pen:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>', palette:'<path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 1.5-2-.6-1.2.2-2.5 1.5-2.5H18a3 3 0 0 0 3-3C21 7 17 3 12 3z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10" cy="7" r="1.2"/><circle cx="15" cy="7.5" r="1.2"/>',
+  search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/>', drop:'<path d="M12 3s7 7.5 7 12a7 7 0 0 1-14 0c0-4.5 7-12 7-12z"/>', magic:'<path d="M4 20 15 9M13 7l4 4M18 3v3M16.5 4.5h3M7 3v2M6 4h2M20 13v2M19 14h2"/>',
+  chart:'<path d="M3 3v18h18M7 16v-5M11 16V8M15 16v-3M19 16V6"/>', star:'<path d="m12 3 2.8 5.8 6.2.8-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.8z"/>', grid:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+  group:'<rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="3 2"/><rect x="7" y="7" width="6" height="6" rx="1"/><rect x="11" y="11" width="6" height="6" rx="1"/>', ungroup:'<rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/><path d="M15 4h5v5M4 15v5h5"/>', bg:'<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 15l6-6 12 12"/>',
 };
 const ico = (n, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" aria-hidden="true">${IC[n] || ''}</svg>`;

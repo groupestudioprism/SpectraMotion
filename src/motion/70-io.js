@@ -18,12 +18,23 @@ const IO = {
     const P = ED.P, timed = TIMED(ED.studio) || projEnd(P) > 0 && P.layers.some(l => l.tin.k !== 'none' || l.tout.k !== 'none' || Object.keys(l.kf || {}).length || l.t === 'video' || l.t === 'audio');
     tab = tab || (ED.studio === 'audio' ? 'audio' : TIMED(ED.studio) ? 'video' : 'image');
     const vt = recTypes(), full = this.canFull(), hasAudio = P.layers.some(l => audible(P, l));
-    const tabs = [['image', 'Image'], ['video', 'Vidéo'], ['audio', 'Son'], ['project', 'Projet']];
+    const tabs = [['image', 'Image'], ['pdf', 'PDF'], ['video', 'Vidéo'], ['gif', 'GIF'], ['audio', 'Son'], ['project', 'Projet']], np = pageCount(P);
+    const multiFmts = ['square', 'portrait', 'story', 'fbpost', 'xpost', 'pin', 'thumb', 'hd', 'a4', 'lipost'].map(id => FORMATS.find(f => f.id === id)).filter(f => f && !(f.w === P.w && f.h === P.h));
     const body = {
       image:`<p class="dlg-p">L'image affichée à la tête de lecture (${fmtT(PLAY.t)}).</p>
         <div class="xp-g"><label class="fd sel"><span>Format</span><select id="xpImgFmt"><option value="png">PNG · sans perte${P.bg ? '' : ', fond transparent'}</option><option value="jpeg">JPEG · léger</option><option value="webp"${full ? '' : ' disabled'}>WebP${full ? '' : ' (licence)'}</option></select></label>
         <label class="fd sel"><span>Taille</span><select id="xpImgSc"><option value="1">${P.w} × ${P.h} (taille réelle)</option><option value="2"${full ? '' : ' disabled'}>${P.w * 2} × ${P.h * 2} (× 2)${full ? '' : ' · licence'}</option><option value="0.5">${Math.round(P.w / 2)} × ${Math.round(P.h / 2)} (moitié)</option></select></label></div>
-        <label class="ap-check"><input type="checkbox" id="xpImgTr"${P.bg ? '' : ' checked'}><span>Fond transparent (PNG)</span></label>`,
+        <label class="ap-check"><input type="checkbox" id="xpImgTr"${P.bg ? '' : ' checked'}><span>Fond transparent (PNG)</span></label>
+        <div class="xp-g"><label class="fd sel"><span>Pages et formats</span><select id="xpImgSet"><option value="cur">${np > 1 ? `Page actuelle (${(P.pg || 0) + 1} / ${np})` : 'Ce design'}</option>${np > 1 ? `<option value="all">Toutes les pages (${np}) · fichier .zip</option>` : ''}<option value="multi">Redimensionner : plusieurs formats · fichier .zip</option></select></label></div>
+        <div class="xp-multi" id="xpMulti" hidden><p class="dlg-p small">Le design est adapté à chaque format (contenu remis à l'échelle et recentré), sans modifier votre projet.</p>${multiFmts.map((f, i) => `<label class="ap-check"><input type="checkbox" data-xpf="${f.id}"${i < 3 ? ' checked' : ''}><span>${escH(f.name)} · ${f.w} × ${f.h}</span></label>`).join('')}</div>`,
+      pdf:`<p class="dlg-p">${np > 1 ? `Les ${np} pages dans un seul PDF, dans l'ordre.` : 'Le design en PDF, prêt à envoyer ou à imprimer.'} Taille du papier : ${pdfSize(P).label}.</p>
+        <div class="xp-g"><label class="fd sel"><span>Qualité</span><select id="xpPdfQ"><option value="std">Standard · léger</option><option value="print"${full ? '' : ' disabled'}>Impression · haute définition${full ? '' : ' (licence)'}</option></select></label>
+        <label class="fd sel"><span>Pages</span><select id="xpPdfPages"><option value="all">${np > 1 ? `Toutes (${np})` : 'Ce design'}</option>${np > 1 ? `<option value="cur">Page actuelle seulement</option>` : ''}</select></label></div>
+        <p class="dlg-p small">Chaque page est une image haute qualité dans le PDF (le texte n'est pas sélectionnable).</p>`,
+      gif:`<p class="dlg-p">Une animation qui se lit partout (messageries, e-mails, sites), en boucle${timed ? `, de 0:00 à ${fmtT(Math.min(PLAY.end(), 30))}` : ''}. Sans le son.</p>
+        <div class="xp-g"><label class="fd sel"><span>Largeur</span><select id="xpGifW"><option value="320">320 px</option><option value="480" selected>480 px</option><option value="720"${full ? '' : ' disabled'}>720 px${full ? '' : ' · licence'}</option></select></label>
+        <label class="fd sel"><span>Images / s</span><select id="xpGifF"><option value="10">10 · plus léger</option><option value="15" selected>15</option><option value="20">20 · plus fluide</option></select></label></div>
+        <p class="dlg-p small">${timed ? 'Au-delà de 30 s, seules les 30 premières secondes sont exportées.' : 'Sans animation, le GIF montre une image fixe : ajoutez des animations (studio Motion ou panneau Animations).'}</p>`,
       video:vt.length ? `<p class="dlg-p">L'export se fait en temps réel (${fmtT(PLAY.end())}) : gardez cet onglet ouvert et visible jusqu'à la fin.</p>
         <div class="xp-g"><label class="fd sel"><span>Format</span><select id="xpVidFmt">${(() => { const first = vt.findIndex(([e]) => full || e !== 'mp4'); return vt.map(([e, t, n], i) => `<option value="${i}"${e === 'mp4' && !full ? ' disabled' : ''}${i === first ? ' selected' : ''}>${n}${e === 'mp4' && !full ? ' · licence' : ''}</option>`).join(''); })()}</select></label>
         <label class="fd sel"><span>Définition</span><select id="xpVidRes">${[[480, '480p'], [720, '720p'], [1080, '1080p'], [2160, '4K']].filter(([r]) => r <= Math.max(P.w, P.h) * 1.01 || r === 480).map(([r, n]) => `<option value="${r}"${r === 720 ? ' selected' : ''}${r > 720 && !full ? ' disabled' : ''}>${n}${r > 720 && !full ? ' · licence' : ''}</option>`).join('')}</select></label></div>
@@ -42,6 +53,7 @@ const IO = {
     window.SWDlg.open(html, d => {
       d.querySelectorAll('[data-xt]').forEach(b => b.onclick = () => { if (!this.busy) this.dialog(b.dataset.xt); });
       d.querySelector('#xpGo').onclick = () => this.run(tab, d);
+      const set = d.querySelector('#xpImgSet'); if (set) set.onchange = () => { d.querySelector('#xpMulti').hidden = set.value !== 'multi'; };
       d.querySelector('#xpCancel').onclick = () => { if (this.busy){ this.cancel = true; return; } window.SWDlg.close(); };
     }, 'xp');
     void timed;
@@ -52,22 +64,65 @@ const IO = {
     d.querySelector('#xpCancel').textContent = tab === 'video' ? 'Annuler' : 'Fermer';
     if (PLAY.playing) PLAY.pause();
     try {
-      if (tab === 'image') await this.image(d.querySelector('#xpImgFmt').value, +d.querySelector('#xpImgSc').value, d.querySelector('#xpImgTr').checked);
+      if (tab === 'image'){ const set = d.querySelector('#xpImgSet').value, a = [d.querySelector('#xpImgFmt').value, +d.querySelector('#xpImgSc').value, d.querySelector('#xpImgTr').checked];
+        if (set === 'cur') await this.image(...a);
+        else await this.imageSet(set, ...a, [...d.querySelectorAll('[data-xpf]:checked')].map(x => FORMATS.find(f => f.id === x.dataset.xpf)), (f, t) => this.prog(d, f, t)); }
+      if (tab === 'pdf') await this.pdf(d.querySelector('#xpPdfQ').value, d.querySelector('#xpPdfPages').value, (f, t) => this.prog(d, f, t));
+      if (tab === 'gif') await this.gif(+d.querySelector('#xpGifW').value, +d.querySelector('#xpGifF').value, (f, t) => this.prog(d, f, t));
       if (tab === 'video') await this.video(recTypes()[+d.querySelector('#xpVidFmt').value], +d.querySelector('#xpVidRes').value, (f, t) => this.prog(d, f, t));
       if (tab === 'audio') await this.wav((f, t) => this.prog(d, f, t));
       if (tab === 'project') await this.project(d.querySelector('[name=xpProj]:checked').value, (f, t) => this.prog(d, f, t));
       if (!this.cancel){ window.SWDlg.close(); toast('Export terminé : le fichier est téléchargé'); }
+      d.querySelector('#xpGo').disabled = false;
     } catch(e){ console.error('[Spectra Motion] export', e); err.textContent = e?.message || 'L\'export a échoué.'; }
     finally { this.busy = false; go.disabled = false; d.querySelector('#xpCancel').textContent = 'Fermer'; if (this.cancel){ d.querySelector('#xpProg').hidden = true; err.textContent = 'Export annulé.'; } STAGE.paint(); }
   },
   async image(fmt, sc, transparent){
-    const P = ED.P, cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(P.w * sc)); cv.height = Math.max(1, Math.round(P.h * sc));
-    await MEDIA.loadAll(P); await seekVideos(P, PLAY.t);
-    const ctx = cv.getContext('2d');
-    if (fmt === 'jpeg' || !transparent){ ctx.fillStyle = P.bg || '#FFFFFF'; ctx.fillRect(0, 0, cv.width, cv.height); }
-    renderFrame(ctx, P, PLAY.t, {scale:sc, transparent:transparent && fmt !== 'jpeg', noClear:true, final:true, noFx:!TIMED(P.studio)});
+    const cv = await this.canvasOf(ED.P, sc, fmt, transparent);
     const blob = await new Promise(r => cv.toBlob(r, 'image/' + fmt, .92)); if (!blob) throw new Error('Image trop grande pour ce navigateur.');
     await this.save(`${this.fileBase()}.${fmt === 'jpeg' ? 'jpg' : fmt}`, blob);
+  },
+  /* rendu d'un projet (ou d'une page) dans un canvas, à l'échelle sc */
+  async canvasOf(V, sc, fmt = 'png', transparent = false, t = PLAY.t){
+    const cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(V.w * sc)); cv.height = Math.max(1, Math.round(V.h * sc));
+    await MEDIA.loadAll(V); await fontsReady(V); await seekVideos(V, t);
+    const ctx = cv.getContext('2d'); if (fmt === 'jpeg' || !transparent){ ctx.fillStyle = V.bg || '#FFFFFF'; ctx.fillRect(0, 0, cv.width, cv.height); }
+    renderFrame(ctx, V, t, {scale:sc, transparent:transparent && fmt !== 'jpeg', noClear:true, final:true, noFx:!TIMED(V.studio)});
+    return cv;
+  },
+  /* toutes les pages, ou plusieurs formats (Redimensionner), dans un .zip */
+  async imageSet(set, fmt, sc, transparent, fmts, prog){
+    const P = ED.P, JSZip = await loadZip(), z = new JSZip(), ext = fmt === 'jpeg' ? 'jpg' : fmt, base = this.fileBase();
+    const jobs = set === 'all' ? [...Array(pageCount(P))].map((_, i) => ({V:pageView(P, i), name:`${base}-page-${String(i + 1).padStart(2, '0')}.${ext}`}))
+      : fmts.map(f => ({V:rescale(cleanProject(JSON.stringify(P)), f), name:`${base}-${f.id}-${f.w}x${f.h}.${ext}`}));
+    if (!jobs.length) throw new Error('Choisissez au moins un format.');
+    for (const [i, j] of jobs.entries()){ prog(i / jobs.length, `Image ${i + 1} / ${jobs.length}…`); if (this.cancel) return; const cv = await this.canvasOf(j.V, sc, fmt, transparent, set === 'all' ? 0 : PLAY.t); const b = await new Promise(r => cv.toBlob(r, 'image/' + fmt, .92)); if (b) z.file(j.name, b); }
+    prog(.95, 'Assemblage…'); await this.save(`${base}-${set === 'all' ? 'pages' : 'formats'}.zip`, await z.generateAsync({type:'blob', compression:'STORE'}));
+  },
+  async pdf(q, which, prog){
+    const P = ED.P, n = pageCount(P), idx = which === 'cur' ? [P.pg || 0] : [...Array(n).keys()], sz = pdfSize(P);
+    const sc = Math.min(q === 'print' ? 2 : 1, 6000 / Math.max(P.w, P.h)), pages = [];
+    for (const [k, i] of idx.entries()){
+      if (this.cancel) return; prog(k / idx.length * .9, `Page ${k + 1} / ${idx.length}…`);
+      const cv = await this.canvasOf(pageView(P, i), sc, 'jpeg', false, 0), b = await new Promise(r => cv.toBlob(r, 'image/jpeg', q === 'print' ? .95 : .86));
+      if (!b) throw new Error('Page trop grande pour ce navigateur.'); pages.push({jpg:new Uint8Array(await b.arrayBuffer()), pw:cv.width, ph:cv.height});
+    }
+    prog(.95, 'Assemblage du PDF…'); await this.save(`${this.fileBase()}.pdf`, pdfOf(pages, sz.w, sz.h, P.title));
+  },
+  async gif(width, fps, prog){
+    const P = ED.P, timed = TIMED(P.studio) || P.layers.some(l => l.tin.k !== 'none' || l.tout.k !== 'none' || Object.keys(l.kf || {}).length || l.t === 'video');
+    const end = timed ? Math.min(30, PLAY.end()) : 0, nf = timed ? Math.max(1, Math.min(600, Math.round(end * fps))) : 1, sc = Math.min(1, width / P.w), W = Math.round(P.w * sc), H = Math.round(P.h * sc);
+    await MEDIA.loadAll(P); await fontsReady(P);
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const ctx = cv.getContext('2d', {willReadFrequently:true}), frames = [];
+    for (let i = 0; i < nf; i++){
+      if (this.cancel) return; const t = i / fps; await seekVideos(P, t);
+      ctx.fillStyle = P.bg || '#FFFFFF'; ctx.fillRect(0, 0, W, H); renderFrame(ctx, P, t, {scale:sc, noClear:true, final:true});
+      frames.push(ctx.getImageData(0, 0, W, H)); if (i % 4 === 0){ prog(i / nf * .6, `Image ${i + 1} / ${nf}…`); await sleepE(0); }
+    }
+    prog(.65, 'Encodage du GIF…'); await sleepE(20);
+    const bytes = await gifEncode(frames, W, H, Math.round(100 / fps), f => prog(.65 + f * .33, 'Encodage du GIF…'), () => this.cancel);
+    if (!bytes) return; await this.save(`${this.fileBase()}.gif`, new Blob([bytes], {type:'image/gif'}));
+    PLAY.still();
   },
   /* vidéo : rendu image par image dans un canvas enregistré en direct, son mixé par le moteur audio */
   async video(type, res, prog){
@@ -192,4 +247,74 @@ async function readProjectFile(f){
     return JSON.stringify(P);
   }
   const P = cleanProject(await f.text()); return JSON.stringify(P);
+}
+
+/* ---------- PDF : une image JPEG par page (DCTDecode), taille de papier réelle pour les formats d'impression ---------- */
+function pdfSize(P){
+  const f = FORMATS.find(x => x.w === P.w && x.h === P.h && x.dpi), dpi = f?.dpi || 96, w = P.w / dpi * 72, h = P.h / dpi * 72;
+  const mm = v => Math.round(v / 72 * 25.4);
+  return {w, h, label:f ? `${mm(w)} × ${mm(h)} mm` : `${Math.round(w)} × ${Math.round(h)} points (${P.w} × ${P.h} px)`};
+}
+function pdfOf(pages, W, H, title = ''){
+  const enc = new TextEncoder(), parts = [], offs = []; let len = 0;
+  const add = x => { const b = typeof x === 'string' ? enc.encode(x) : x; parts.push(b); len += b.length; };
+  const obj = (n, body) => { offs[n] = len; add(`${n} 0 obj\n`); body(); add('\nendobj\n'); };
+  const esc = t => String(t).replace(/[\\()]/g, '\\$&').replace(/[^\x20-\x7E]/g, '');
+  add('%PDF-1.4\n'); add(new Uint8Array([0x25, 0xE2, 0xE3, 0xCF, 0xD3, 0x0A]));
+  const n = pages.length, pageIds = pages.map((_, i) => 4 + i * 3);
+  obj(1, () => add('<< /Type /Catalog /Pages 2 0 R >>'));
+  obj(2, () => add(`<< /Type /Pages /Kids [${pageIds.map(i => i + ' 0 R').join(' ')}] /Count ${n} >>`));
+  obj(3, () => add(`<< /Producer (Spectra Motion - Studio Prism) /Title (${esc(title)}) >>`));
+  pages.forEach((pg, i) => {
+    const id = pageIds[i], w = W.toFixed(2), h = H.toFixed(2), cs = `q ${w} 0 0 ${h} 0 0 cm /Im0 Do Q`;
+    obj(id, () => add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${w} ${h}] /Resources << /XObject << /Im0 ${id + 1} 0 R >> >> /Contents ${id + 2} 0 R >>`));
+    obj(id + 1, () => { add(`<< /Type /XObject /Subtype /Image /Width ${pg.pw} /Height ${pg.ph} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${pg.jpg.length} >>\nstream\n`); add(pg.jpg); add('\nendstream'); });
+    obj(id + 2, () => add(`<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`));
+  });
+  const total = 4 + n * 3, xref = len;
+  add(`xref\n0 ${total}\n0000000000 65535 f \n`); for (let i = 1; i < total; i++) add(String(offs[i]).padStart(10, '0') + ' 00000 n \n');
+  add(`trailer\n<< /Size ${total} /Root 1 0 R /Info 3 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+  return new Blob(parts, {type:'application/pdf'});
+}
+/* ---------- GIF animé : palette commune (coupe médiane), compression LZW ---------- */
+async function gifEncode(frames, W, H, delayCs, prog = () => {}, cancelled = () => false){
+  // 1. palette : échantillon de pixels de toutes les images, coupe médiane en 256 boîtes
+  const sample = [], step = Math.max(1, Math.floor(frames.length * W * H / 120000));
+  for (let f = 0, k = 0; f < frames.length; f++){ const d = frames[f].data; for (let i = (k % step) * 4; i < d.length; i += step * 4) sample.push([d[i], d[i + 1], d[i + 2]]); k++; }
+  const boxes = [sample];
+  while (boxes.length < 256){
+    let bi = -1, br = -1, bc = 0;
+    boxes.forEach((b, i) => { if (b.length < 2) return; for (let c = 0; c < 3; c++){ let mn = 255, mx = 0; for (const p of b){ if (p[c] < mn) mn = p[c]; if (p[c] > mx) mx = p[c]; } if (mx - mn > br){ br = mx - mn; bi = i; bc = c; } } });
+    if (bi < 0 || br <= 0) break; const b = boxes[bi].sort((p, q) => p[bc] - q[bc]), m = b.length >> 1; boxes.splice(bi, 1, b.slice(0, m), b.slice(m));
+  }
+  const pal = boxes.map(b => { let r = 0, g = 0, bl = 0; for (const p of b){ r += p[0]; g += p[1]; bl += p[2]; } const n = Math.max(1, b.length); return [Math.round(r / n), Math.round(g / n), Math.round(bl / n)]; });
+  while (pal.length < 256) pal.push([0, 0, 0]);
+  const near = new Int16Array(32768).fill(-1);
+  const idx = (r, g, b) => { const key = (r >> 3) << 10 | (g >> 3) << 5 | (b >> 3); let v = near[key]; if (v >= 0) return v; let best = 0, bd = 1e9; for (let i = 0; i < 256; i++){ const p = pal[i], dd = (p[0] - r) ** 2 + (p[1] - g) ** 2 + (p[2] - b) ** 2; if (dd < bd){ bd = dd; best = i; } } near[key] = best; return best; };
+  // 2. flux GIF
+  const out = []; const b8 = v => out.push(v & 255), b16 = v => { b8(v); b8(v >> 8); }, str = s => [...s].forEach(c => b8(c.charCodeAt(0)));
+  str('GIF89a'); b16(W); b16(H); b8(0xF7); b8(0); b8(0); pal.forEach(p => { b8(p[0]); b8(p[1]); b8(p[2]); });
+  if (frames.length > 1){ b8(0x21); b8(0xFF); b8(11); str('NETSCAPE2.0'); b8(3); b8(1); b16(0); b8(0); }
+  for (let f = 0; f < frames.length; f++){
+    if (cancelled()) return null;
+    const d = frames[f].data, px = new Uint8Array(W * H); for (let i = 0, j = 0; j < px.length; i += 4, j++) px[j] = idx(d[i], d[i + 1], d[i + 2]);
+    b8(0x21); b8(0xF9); b8(4); b8(0x04); b16(Math.max(2, delayCs)); b8(0); b8(0);
+    b8(0x2C); b16(0); b16(0); b16(W); b16(H); b8(0);
+    // LZW (taille de code minimale : 8)
+    b8(8); const clear = 256, eoi = 257; let size = 9, next = 258, dict = new Map(), cur = 0, nb = 0; const bytes = [];
+    const emit = c => { cur |= c << nb; nb += size; while (nb >= 8){ bytes.push(cur & 255); cur >>>= 8; nb -= 8; } };
+    emit(clear); let w = px[0];
+    for (let i = 1; i < px.length; i++){
+      const k = px[i], key = w << 8 | k, hit = dict.get(key);
+      if (hit !== undefined){ w = hit; continue; }
+      emit(w); if (next < 4096){ dict.set(key, next++); if (next > (1 << size) && size < 12) size++; } else { emit(clear); dict = new Map(); next = 258; size = 9; }
+      w = k;
+    }
+    emit(w); emit(eoi); if (nb > 0) bytes.push(cur & 255);
+    for (let i = 0; i < bytes.length; i += 255){ const n = Math.min(255, bytes.length - i); b8(n); for (let j = 0; j < n; j++) out.push(bytes[i + j]); }
+    b8(0);
+    if (f % 3 === 0){ prog(f / frames.length); await sleepE(0); }
+  }
+  b8(0x3B);
+  return new Uint8Array(out);
 }

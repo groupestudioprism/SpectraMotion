@@ -313,6 +313,8 @@ async function migrateLocal(){
 let libTimer = 0;
 window.SWLib = {
   save(lib){ clearTimeout(libTimer); libTimer = setTimeout(async () => { try { await withTimeout(Cloud().saveLib(lib), 15000); } catch(e){ toastA(e?.code === 'app/too-big' ? 'Bibliothèque personnelle trop volumineuse' : 'Bibliothèque non synchronisée (hors ligne ?)'); } }, 800); },
+  /* fusion d'une partie (ex. la charte graphique) dans la bibliothèque du compte, sans perdre les modèles */
+  merge(part){ userLib = {...userLib, ...part}; this.save(userLib); try { window.SWEditor.setUserLib(userLib); } catch(e){} },
 };
 let userLib = {};
 async function loadUserLib(){ try { userLib = (await withTimeout(Cloud().loadLib(), 12000)) || {}; } catch(e){ if (e?.code === 'permission-denied'){ goLocal(e); try { userLib = (await LocalCloud.loadLib()) || {}; } catch(x){} } }
@@ -472,7 +474,7 @@ function folderHtml(f, shared){
 }
 function tplCard(t, big){
   return `<button type="button" class="tcard${big ? ' big' : ''}" data-tpl="${esc(t.id)}" aria-label="Nouveau : ${esc(t.name)}">
-    <div class="tthumb">${String(t.id).startsWith('blank') ? `<div class="tblank s-${esc(t.studio || 'design')}"><span class="plus">+</span><small>${esc(STUDIO_N[t.studio] || '')}</small></div>` : t.mine ? thumbHtml({preview:t.preview}) : `<img class="hpimg" alt="" loading="lazy" src="${esc(window.SMTplThumb ? window.SMTplThumb(t.id) : '')}">`}</div>
+    <div class="tthumb">${String(t.id).startsWith('blank') ? `<div class="tblank s-${esc(t.studio || 'design')}"><span class="plus">+</span><small>${esc(STUDIO_N[t.studio] || '')}</small></div>` : t.mine ? thumbHtml({preview:t.preview}) : `<img class="hpimg" alt="" data-tth="${esc(t.id)}">`}</div>
     <b>${esc(t.name)}</b>${big ? `<small>${esc(t.desc || '')}</small>` : `<small>${esc(t.cat || '')}</small>`}</button>`;
 }
 function myTplCards(){ const l = userLib?.templates || []; return l.map(t => ({...t, mine:true})); }
@@ -561,7 +563,7 @@ function renderHome(){
         + (!fs.length && !ps.length ? `<div class="hempty"><div class="hic">${ICON.share}</div><h3>Rien de partagé avec vous</h3><p>Quand quelqu'un vous partage un projet ou un dossier SPECTRA avec l'adresse ${esc(me.email)}, ou vous envoie un lien, il apparaît ici.</p></div>` : '');
     }
   }
-  body.innerHTML = h;
+  body.innerHTML = h; window.SMLazyThumbs?.(body);
   const titles = {home:['Accueil', ''], templates:['Modèles', 'Partez d\'un modèle conçu par Studio Prism : tout se personnalise en un clic.'], mine:['Mes projets', 'Vos projets s\'enregistrent tout seuls.'], shared:['Partagés avec moi', 'Les projets et dossiers que l\'on vous a partagés.']};
   const ht = $a('#homeTitle'); if (ht){ ht.hidden = H.tab === 'home'; ht.innerHTML = H.tab === 'home' ? '' : `<h1>${titles[H.tab][0]}</h1><p>${titles[H.tab][1]}</p>`; }
   $a('#homeHero').hidden = H.tab !== 'home';

@@ -129,8 +129,10 @@
     <aside class="sm-panel" id="smPanel" aria-labelledby="smPanelTitle"><header><b id="smPanelTitle"></b><button type="button" class="ib" id="smPanelClose" aria-label="Fermer le panneau"><svg viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></svg></button></header><div class="sm-pbody" id="smPanelBody"></div></aside>
     <main class="sm-stage" id="smStage" aria-label="Scène">
       <div class="stg-wrap" id="stgWrap"><canvas id="stgCanvas"></canvas><div class="stg-ovl" id="stgOvl"></div></div>
+      <nav class="sm-pages" id="smPages" aria-label="Pages" hidden></nav>
       <div class="stg-tools" role="toolbar" aria-label="Affichage">
         <button type="button" id="stgPlay" class="ib" hidden aria-label="Lecture"></button><span id="stgTime" class="stg-t" hidden></span>
+        <button type="button" class="ib" id="stgGrid" aria-pressed="false" title="Grille magnétique"><svg viewBox="0 0 24 24"><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg></button>
         <button type="button" class="ib" id="stgSnap" aria-pressed="true" title="Repères magnétiques"><svg viewBox="0 0 24 24"><path d="M6 4v8a6 6 0 0 0 12 0V4h-4v8a2 2 0 0 1-4 0V4z"/><path d="M6 8h4M14 8h4"/></svg></button>
         <button type="button" class="ib" id="stgZoomOut" aria-label="Dézoomer"><svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button><button type="button" id="stgFit" class="stg-z" title="Ajuster à la fenêtre (Ctrl + 0)"><span id="stgZoomV">100 %</span></button><button type="button" class="ib" id="stgZoomIn" aria-label="Zoomer"><svg viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg></button>
       </div>

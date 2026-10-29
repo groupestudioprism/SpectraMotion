@@ -6,8 +6,8 @@ import {readFileSync} from 'fs';
 import {fileURLToPath} from 'url';
 import path from 'path';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const src = ['00-util.js', '10-model.js'].map(f => readFileSync(path.join(ROOT, 'src/motion', f), 'utf8')).join('\n');
-const M = new Function('document', 'window', src + '\nreturn {newProject, mkText, mkShape, mkMediaLayer, mkColor, kfVal, setKf, delKf, cleanProject, HIST, syncDur, projEnd, drawOrder, topTrack, ease, visible, fmtTC, fmtT};')(undefined, {});
+const src = ['00-util.js', '10-model.js', '12-icons.js', '32-elements.js'].map(f => readFileSync(path.join(ROOT, 'src/motion', f), 'utf8')).join('\n');
+const M = new Function('document', 'window', src + '\nreturn {newProject, mkText, mkShape, mkMediaLayer, mkColor, kfVal, setKf, delKf, cleanProject, HIST, syncDur, projEnd, drawOrder, topTrack, ease, visible, fmtTC, fmtT, mkIcon, mkChart, mkQr, mkDraw, pageAdd, pageGo, pageDel, pageMove, pageCount, pageView, allLayers, rescale, docColors, recolor, qrMatrix, simplify, ICONS};')(undefined, {});
 
 test('nouveau projet : format et durée selon le studio', () => {
   const v = M.newProject('video'); assert.equal(v.w, 1920); assert.equal(v.h, 1080); assert.equal(v.studio, 'video'); assert.equal(v.bg, '#000000');
@@ -56,4 +56,41 @@ test('masques de forme : valeur connue gardée, valeur inconnue remplacée', () 
   const L = M.mkMediaLayer(P, P.media.med1); L.mask = 'ellipse'; const B = M.mkMediaLayer(P, P.media.med1); B.mask = '<svg onload=x>';
   P.layers.push(L, B); const C = M.cleanProject(JSON.parse(JSON.stringify(P)));
   assert.equal(C.layers[0].mask, 'ellipse'); assert.equal(C.layers[1].mask, 'none');
+});
+
+test('nouveaux éléments : icône, graphique, QR code, dessin conservés ; valeurs hostiles neutralisées', () => {
+  const P = M.newProject('design');
+  P.layers.push(M.mkIcon(P, 'crane'), M.mkChart(P, 'pie'), M.mkQr(P, 'https://exemple.fr'), M.mkDraw(P, [[0, 0], [.5, .5], [1, 1]]));
+  const C = M.cleanProject(JSON.parse(JSON.stringify(P)));
+  assert.deepEqual(C.layers.map(l => l.t), ['icon', 'chart', 'qr', 'draw']);
+  assert.equal(C.layers[0].ic, 'crane'); assert.equal(C.layers[1].ck, 'pie'); assert.equal(C.layers[2].txt, 'https://exemple.fr');
+  const H = M.cleanProject({layers:[{t:'icon', ic:'<script>'}, {t:'chart', ck:'x', data:[['<b>', 'abc'], 'x'], pal:['red', '#FF0000']}, {t:'qr', txt:'a'.repeat(5000), ecc:'Z'}, {t:'draw', pts:[[0, 0]]}, {t:'text', txt:'x', tfx:{k:'boom'}, list:'evil', curve:999}]});
+  assert.equal(H.layers[0].ic, 'star'); assert.equal(H.layers[1].ck, 'col'); assert.deepEqual(H.layers[1].data, [['<b>', 0]]); assert.deepEqual(H.layers[1].pal, ['#FF0000']);
+  assert.equal(H.layers[2].txt.length, 600); assert.equal(H.layers[2].ecc, 'M');
+  assert.equal(H.layers.some(l => l.t === 'draw'), false, 'un dessin d\'un seul point est écarté');
+  const T = H.layers.find(l => l.t === 'text'); assert.equal(T.tfx, undefined); assert.equal(T.list, 'none'); assert.equal(T.curve, 100);
+});
+test('pages : ajouter, dupliquer, naviguer, supprimer, déplacer ; sérialisation et assainissement', () => {
+  const P = M.newProject('design'); P.layers.push(M.mkShape(P, 'rect'));
+  M.pageAdd(P, false); assert.equal(M.pageCount(P), 2); assert.equal(P.pg, 1); assert.equal(P.layers.length, 0);
+  P.layers.push(M.mkText(P, {txt:'p2'})); M.pageAdd(P, true); assert.equal(M.pageCount(P), 3); assert.equal(P.layers[0].txt, 'p2');
+  assert.notEqual(P.layers[0].id, M.pageView(P, 1).layers[0].id, 'la copie a de nouveaux identifiants');
+  M.pageGo(P, 0); assert.equal(P.layers[0].t, 'shape'); assert.equal(M.allLayers(P).length, 3);
+  const C = M.cleanProject(JSON.parse(JSON.stringify(P))); assert.equal(M.pageCount(C), 3); assert.equal(C.pg, 0); assert.equal(C.pages[0].live, true); assert.equal(C.pages[2].layers[0].txt, 'p2');
+  M.pageMove(P, 0, 2); assert.equal(P.pg, 2); M.pageDel(P, 2); assert.equal(M.pageCount(P), 2); M.pageDel(P, 0); assert.equal(M.pageCount(P), 1); assert.equal(P.pages, undefined);
+  const H = M.cleanProject({layers:[], pages:'x'}); assert.equal(H.pages, undefined);
+});
+test('Redimensionner et Styles : toutes les pages suivent', () => {
+  const P = M.newProject('design'); P.layers.push(M.mkShape(P, 'rect', {x:0, y:0, w:540, h:540, fill:'#7B2FF7'})); M.pageAdd(P, false); P.layers.push(M.mkText(P, {col:'#14C2EC', fs:100}));
+  M.rescale(P, {w:2160, h:2160}); assert.equal(P.w, 2160); assert.equal(M.pageView(P, 0).layers[0].w, 1080); assert.equal(P.layers[0].fs, 200);
+  assert.ok(M.docColors(P).includes('#7B2FF7')); const n = M.recolor(P, ['#111111', '#222222']); assert.ok(n >= 2);
+  assert.ok(!M.docColors(P).includes('#7B2FF7') && !M.docColors(P).includes('#14C2EC'));
+});
+test('QR code : tailles, niveaux de correction, texte trop long', () => {
+  assert.equal(M.qrMatrix('A', 'M').length, 21); assert.equal(M.qrMatrix('https://exemple.fr/' + 'a'.repeat(500), 'H').length, 25 * 4 + 17);
+  assert.equal(M.qrMatrix('x'.repeat(3000), 'H'), null); const m = M.qrMatrix('Spectra', 'L'); assert.equal(m[0][0], true); assert.equal(m[7][7], false, 'séparateur du motif de repérage');
+});
+test('dessin : simplification du tracé', () => {
+  const pts = [...Array(100)].map((_, i) => [i, 0]); assert.equal(M.simplify(pts, .5).length, 2);
+  const zig = [...Array(20)].map((_, i) => [i, i % 2 * 10]); assert.ok(M.simplify(zig, .5).length > 10);
 });
