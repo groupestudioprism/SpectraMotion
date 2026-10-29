@@ -3,6 +3,21 @@
    (recalées si elles dérivent de plus de 0,2 s). Le même plan de mixage sert à la lecture, à l'export vidéo et à l'export WAV. */
 const audible = (P, L) => L.vis !== false && !L.mute && (L.vol ?? 1) > 0 && (L.t === 'audio' || (L.t === 'video' && P.media[L.media]?.hasAudio));
 /* programme le son de toutes les pistes à partir de l'instant `from` du projet, dans le contexte ac, vers dest */
+/* réponse impulsionnelle générée (bruit qui décroît) pour la réverbération : aucun fichier à télécharger */
+function impulse(ac, sec = 2.2){
+  const k = ac.sampleRate + ':' + sec; impulse.c ||= new WeakMap(); let m = impulse.c.get(ac); if (!m){ m = {}; impulse.c.set(ac, m); } if (m[k]) return m[k];
+  const n = Math.round(ac.sampleRate * sec), b = ac.createBuffer(2, n, ac.sampleRate);
+  for (let c = 0; c < 2; c++){ const d = b.getChannelData(c); let s = 1234 + c * 77; for (let i = 0; i < n; i++){ s = (s * 16807) % 2147483647; d[i] = ((s / 2147483647) * 2 - 1) * (1 - i / n) ** 3.2; } }
+  return m[k] = b;
+}
+/* intervalles où « parlent » les autres pistes (pour baisser automatiquement une musique) */
+function duckSpans(P, L){
+  const sp = P.layers.filter(o => o !== L && !o.duck && audible(P, o)).map(o => [o.start, o.start + o.dur]).sort((a, b) => a[0] - b[0]), out = [];
+  for (const s of sp){ const l = out[out.length - 1]; if (l && s[0] <= l[1] + .5) l[1] = Math.max(l[1], s[1]); else out.push([...s]); }
+  return out;
+}
+const DUCK = .22, DUCK_R = .3;
+function duckAt(spans, t){ let f = 1; for (const [a, b] of spans){ if (t >= a - DUCK_R && t <= b + DUCK_R){ const v = t < a ? 1 - (1 - DUCK) * (t - (a - DUCK_R)) / DUCK_R : t > b ? DUCK + (1 - DUCK) * (t - b) / DUCK_R : DUCK; f = Math.min(f, v); } } return f; }
 function scheduleAudio(P, ac, dest, from, base, until = Infinity){
   const nodes = [];
   for (const L of P.layers){
@@ -12,15 +27,24 @@ function scheduleAudio(P, ac, dest, from, base, until = Infinity){
     const t0 = Math.max(from, a), sp = L.speed || 1, off = srcTime(L, t0); if (off >= buf.duration) continue;
     const src = ac.createBufferSource(); src.buffer = buf; src.playbackRate.value = sp;
     const g = ac.createGain(), vol = L.vol ?? 1;
-    const gv = tp => { let v = vol; if (L.fadeIn > 0 && tp < a + L.fadeIn) v *= clamp((tp - a) / L.fadeIn, 0, 1); if (L.fadeOut > 0 && tp > L.start + L.dur - L.fadeOut) v *= clamp((L.start + L.dur - tp) / L.fadeOut, 0, 1); return v; };
+    const dsp = L.duck ? duckSpans(P, L) : [];
+    const gv = tp => { let v = vol * (dsp.length ? duckAt(dsp, tp) : 1); if (L.fadeIn > 0 && tp < a + L.fadeIn) v *= clamp((tp - a) / L.fadeIn, 0, 1); if (L.fadeOut > 0 && tp > L.start + L.dur - L.fadeOut) v *= clamp((L.start + L.dur - tp) / L.fadeOut, 0, 1); return v; };
     const at = tp => base + (tp - from);
     g.gain.setValueAtTime(gv(t0), at(t0));
     const pts = []; if (L.fadeIn > 0) pts.push(a + L.fadeIn); if (L.fadeOut > 0) pts.push(L.start + L.dur - L.fadeOut, L.start + L.dur);
+    for (const [x, y] of dsp) pts.push(x - DUCK_R, x, y, y + DUCK_R);
     pts.filter(p => p > t0 && p <= b).sort((x, y) => x - y).forEach(p => g.gain.linearRampToValueAtTime(gv(p), at(p)));
     // égaliseur (graves / aigus) et panoramique, si réglés
     let head = src;
     if (L.eqLo){ const f = ac.createBiquadFilter(); f.type = 'lowshelf'; f.frequency.value = 220; f.gain.value = L.eqLo; head.connect(f); head = f; nodes.push(f); }
     if (L.eqHi){ const f = ac.createBiquadFilter(); f.type = 'highshelf'; f.frequency.value = 3200; f.gain.value = L.eqHi; head.connect(f); head = f; nodes.push(f); }
+    if (L.comp){ const c = ac.createDynamicsCompressor(); c.threshold.value = -24; c.knee.value = 12; c.ratio.value = 4; c.attack.value = .005; c.release.value = .2; const mk = ac.createGain(); mk.gain.value = 1.5; const lim = ac.createDynamicsCompressor(); lim.threshold.value = -3; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = 0; lim.release.value = .08; head.connect(c); c.connect(mk); mk.connect(lim); head = lim; nodes.push(c, mk, lim); }
+    if (L.echo > 0 || L.rev > 0){ // écho (retard réinjecté) et réverbération (convolution), mélangés au son direct
+      const mix = ac.createGain(); head.connect(mix); nodes.push(mix);
+      if (L.echo > 0){ const dl = ac.createDelay(2), fb = ac.createGain(), wet = ac.createGain(); dl.delayTime.value = .32; fb.gain.value = clamp(L.echo / 100 * .65, 0, .7); wet.gain.value = L.echo / 100 * .8; head.connect(dl); dl.connect(fb); fb.connect(dl); dl.connect(wet); wet.connect(mix); nodes.push(dl, fb, wet); }
+      if (L.rev > 0){ const cv = ac.createConvolver(), wet = ac.createGain(); cv.buffer = impulse(ac, 1.2 + L.rev / 100 * 2.4); wet.gain.value = L.rev / 100 * 1.1; head.connect(cv); cv.connect(wet); wet.connect(mix); nodes.push(cv, wet); }
+      head = mix;
+    }
     head.connect(g);
     if (L.pan && ac.createStereoPanner){ const pn = ac.createStereoPanner(); pn.pan.value = clamp(L.pan, -1, 1); g.connect(pn); pn.connect(dest); nodes.push(pn); } else g.connect(dest);
     try { src.start(at(t0), off, Math.max(0, (b - t0) * sp)); nodes.push(src, g); } catch(e){ console.warn('[Spectra Motion] son', e); }

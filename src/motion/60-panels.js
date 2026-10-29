@@ -101,6 +101,20 @@ const ANIM_PRESETS = [
   {n:'Respiration', d:'Grandit et rétrécit lentement', a:L => { const k = []; for (let t = 0, i = 0; t <= L.dur + 1e-6; t += 1.5, i++) k.push([round(t, 3), i % 2 ? 1.05 : 1, 'ease']); L.kf.sc = k; }},
   {n:'Balancier', d:'Oscille de gauche à droite', a:L => { const k = []; const r = L.rot || 0; for (let t = 0, i = 0; t <= L.dur + 1e-6; t += .6, i++) k.push([round(t, 3), r + (i % 2 ? 6 : -6), 'ease']); L.kf.rot = k; }},
   {n:'Clignotement', d:'Apparaît et disparaît en rythme', a:L => { const k = []; for (let t = 0, i = 0; t <= L.dur + 1e-6; t += .5, i++) k.push([round(t, 3), i % 2 ? .15 : 1, 'hold']); L.kf.op = k; }},
+  {n:'Lettre par lettre', d:'Chaque lettre apparaît en fondu (texte)', only:'text', a:L => { L.tin = {k:'letters', d:Math.min(L.dur * .7, Math.max(.6, (L.txt || '').length * .045))}; L.tout = {k:'fade', d:.4}; }},
+  {n:'Lettres qui montent', d:'Les lettres montent une à une (texte)', only:'text', a:L => { L.tin = {k:'lettersUp', d:Math.min(L.dur * .7, Math.max(.7, (L.txt || '').length * .05))}; L.tout = {k:'fade', d:.4}; }},
+  {n:'Secousse', d:'Arrive en vibrant', a:L => { L.tin = {k:'shake', d:.7}; L.tout = {k:'fade', d:.4}; }},
+  {n:'Étirement', d:'S\'étire depuis le bas', a:L => { L.tin = {k:'stretch', d:.6}; L.tout = {k:'stretch', d:.5}; }},
+  {n:'Pendule', d:'Arrive en se balançant', a:L => { L.tin = {k:'swing', d:1}; L.tout = {k:'fade', d:.4}; }},
+  {n:'Zoom flou', d:'Arrive de très près, flou puis net', a:L => { L.tin = {k:'blurZoom', d:.7}; L.tout = {k:'blurZoom', d:.5}; }},
+  {n:'Élévation', d:'Monte derrière une ligne invisible', a:L => { L.tin = {k:'rise', d:.7}; L.tout = {k:'rise', d:.5}; }},
+  {n:'Grandir', d:'Grandit depuis le centre', a:L => { L.tin = {k:'grow', d:.6}; L.tout = {k:'grow', d:.4}; }},
+  {n:'Rebond élastique', d:'Arrive en rebondissant (courbe Rebond)', a:(L, P) => { const y = L.y; L.kf.y = [[0, -L.h - 20, 'bounce'], [round(Math.min(1.2, L.dur * .5), 3), y, 'ease']]; }},
+  {n:'Ressort', d:'Grandit et dépasse avant de se poser (courbe Élastique)', a:L => { L.kf.sc = [[0, .2, 'elastic'], [round(Math.min(1.2, L.dur * .5), 3), 1, 'ease']]; }},
+  {n:'Entrée en dépassement', d:'Glisse depuis la gauche et dépasse un peu (courbe Dépassement)', a:L => { const x = L.x; L.kf.x = [[0, x - Math.max(200, L.w), 'back'], [round(Math.min(.8, L.dur * .5), 3), x, 'ease']]; L.tin = {k:'fade', d:.3}; }},
+  {n:'Zoom avant lent', d:'Rapprochement progressif sur toute la durée', a:L => { L.kf.sc = [[0, 1.12, 'lin'], [round(L.dur, 3), 1, 'lin']]; }},
+  {n:'Panoramique', d:'Glisse lentement de droite à gauche', a:L => { const x = L.x; L.kf.x = [[0, x + L.w * .05, 'lin'], [round(L.dur, 3), x - L.w * .05, 'lin']]; L.kf.sc = [[0, 1.12, 'lin'], [round(L.dur, 3), 1.12, 'lin']]; }},
+  {n:'Battement de cœur', d:'Double pulsation régulière', a:L => { const k = []; for (let t = 0; t <= L.dur + 1e-6; t += 1){ k.push([round(t, 3), 1, 'out'], [round(t + .12, 3), 1.12, 'in'], [round(t + .26, 3), 1, 'out'], [round(t + .38, 3), 1.08, 'in'], [round(t + .55, 3), 1, 'ease']); } L.kf.sc = k.filter(x => x[0] <= L.dur); }},
   {n:'Aucune animation', d:'Retire effets et images clés', a:L => { L.tin = {k:'none', d:.6}; L.tout = {k:'none', d:.6}; L.kf = {}; }},
 ];
 const PANEL = {
@@ -132,7 +146,7 @@ const PANEL = {
     if (!this.open) return; const id = this.cur, P = ED.P; $('#smPanelTitle').textContent = PANELS[id]?.[0] || '';
     $$('[data-pn]', this.rail).forEach(b => b.setAttribute('aria-pressed', b.dataset.pn === id));
     const keep = this.body.scrollTop, fn = this['p_' + id]; this.body.innerHTML = fn ? fn.call(this, P) : ''; this.body.scrollTop = keep;
-    $$('canvas[data-fxprev]', this.body).forEach(cv => this.fxPreview(cv));
+    $$('canvas[data-fxprev],canvas[data-pfxprev]', this.body).forEach(cv => this.fxPreview(cv));
     this.lazyThumbs();
   },
   /* vignettes des modèles calculées petit à petit (l'interface reste fluide) */
@@ -313,6 +327,9 @@ const PANEL = {
     const k = L.bgk;
     return `<div class="pn-adj">${Object.entries(ADJ_KEYS).map(([k, [n, mn, mx]]) => field(n, 'adj.' + k, L.adj?.[k] || 0, {type:'range', min:mn, max:mx, step:1, fmt:v => (v > 0 && mn < 0 ? '+' : '') + Math.round(v), reset:true})).join('')}</div>
       <button type="button" class="pn-big alt" data-act="resetAdj">Réinitialiser les réglages</button>
+      <h4 class="pn-h">Effets photo</h4><div class="pn-pfx">${Object.entries(PFX).map(([k, n]) => `<button type="button" data-pfx="${k}" aria-pressed="${(L.pfx?.k || 'none') === k}"><canvas data-pfxprev="${k}" width="96" height="64"></canvas><span>${n}</span></button>`).join('')}</div>
+      ${L.pfx ? field('Intensité', 'pfx.v', L.pfx.v, {type:'range', min:0, max:100, step:1, fmt:v => Math.round(v)}) : ''}
+      <div class="pn-row"><button type="button" class="pn-btn" data-act="adjAll">Appliquer ces réglages à toutes les images</button></div>
       <div class="pn-row"><button type="button" class="pn-btn" data-act="enhance">${ico('magic')} Amélioration automatique</button></div>
       <h4 class="pn-h">Détourage par IA</h4>
       ${L.t === 'image' ? `<div class="pn-row"><button type="button" class="pn-btn" data-seg="cut:auto">Détourer le sujet</button><button type="button" class="pn-btn" data-seg="cut:person">Détourer une personne</button><button type="button" class="pn-btn" data-seg="blur:auto">Flouter le fond</button></div>
@@ -340,7 +357,9 @@ const PANEL = {
     const a = {...(FILTERS[cv.dataset.fxprev]?.[1] || {})};
     if (SUPPORTS_FILTER) g.filter = filterCss(a);
     try { g.drawImage(el, (sw - cv.width / k) / 2, (sh - cv.height / k) / 2, cv.width / k, cv.height / k, 0, 0, cv.width, cv.height); } catch(e){}
-    g.filter = 'none'; if (a.temp){ g.globalCompositeOperation = 'soft-light'; g.globalAlpha = Math.abs(a.temp) / 100 * .8; g.fillStyle = a.temp > 0 ? '#FF9A3D' : '#3D8BFF'; g.fillRect(0, 0, cv.width, cv.height); }
+    g.filter = 'none';
+    if (PIX_ADJ.some(k => a[k]) || cv.dataset.pfxprev){ try { const im = g.getImageData(0, 0, cv.width, cv.height); if (a.clarity) clarityData(im, a.clarity); toneData(im, a); if (a.sharp) sharpenData(im, a.sharp); if (cv.dataset.pfxprev && cv.dataset.pfxprev !== 'none') pfxData(im, {k:cv.dataset.pfxprev, v:50}, cv.width / 400); g.putImageData(im, 0, 0); } catch(e){} }
+    if (a.temp){ g.globalCompositeOperation = 'soft-light'; g.globalAlpha = Math.abs(a.temp) / 100 * .8; g.fillStyle = a.temp > 0 ? '#FF9A3D' : '#3D8BFF'; g.fillRect(0, 0, cv.width, cv.height); }
     if (a.fade){ g.globalCompositeOperation = 'screen'; g.globalAlpha = a.fade / 100 * .45; g.fillStyle = '#8A8A8A'; g.fillRect(0, 0, cv.width, cv.height); }
   },
   /* --- Vidéo --- */
@@ -419,6 +438,7 @@ const PANEL = {
     if (g('[data-filter]', b => { const L = ED.sel1(); if (L){ L.filter = b.dataset.filter; ED.commit('Filtre'); this.render(); } })) return;
     if (g('[data-duo]', b => { const L = ED.sel1(); if (!L) return; if (b.dataset.duo === 'off') delete L.duo; else { const [a, c] = DUOS[+b.dataset.duo]; L.duo = {a, b:c}; } ED.commit('Bichromie'); this.render(); })) return;
     if (g('[data-crop]', b => ED.cropPreset(b.dataset.crop))) return;
+    if (g('[data-pfx]', b => { const L = ED.sel1(); if (!L) return; const k = b.dataset.pfx; if (k === 'none') delete L.pfx; else L.pfx = {k, v:L.pfx?.v ?? 50}; ED.commit('Effet photo'); this.render(); })) return;
     if (g('[data-eq]', b => { const L = ED.sel1(); if (!L) return; Object.assign(L, {voice:{eqLo:-4, eqHi:5}, warm:{eqLo:4, eqHi:-2}, radio:{eqLo:-12, eqHi:-6}, flat:{eqLo:0, eqHi:0}}[b.dataset.eq]); ED.commit('Égaliseur'); this.render(); if (PLAY.playing){ PLAY.pause(); PLAY.play(); } })) return;
     if (g('[data-tr]', b => { for (const L of ED.selLayers()) L[b.dataset.tr] = {k:b.dataset.k, d:L[b.dataset.tr]?.d || .6, ...(b.dataset.k === 'block' ? {c:L[b.dataset.tr]?.c || '#7B2FF7'} : {})}; ED.commit('Transition'); this.render(); })) return;
     if (g('[data-anim]', b => { const a = ANIM_PRESETS[+b.dataset.anim]; for (const L of ED.selLayers()) if (L.t !== 'audio' && (!a.only || L.t === a.only)){ L.kf ||= {}; a.a(L, P); } ED.commit('Animation : ' + a.n); if (!PLAY.playing){ const L = ED.sel1(); if (L){ PLAY.seek(L.start, false); PLAY.play(); } } this.render(); })) return;
@@ -452,7 +472,8 @@ const PANEL = {
     if (k === 'enhance' && L){ const el = MEDIA.el(P.media[L.media]), a = el && autoEnhance(el); if (!a) return toast('Image indisponible sur cet appareil.'); L.adj = {...(L.adj || {}), ...a}; for (const x in L.adj) if (!L.adj[x]) delete L.adj[x]; ED.commit('Amélioration automatique'); return this.render(); }
     if (k === 'olnOn' && L){ L.oln = {c:'#FFFFFF', w:12}; if (!L.shadow) L.shadow = {c:'#00000040', b:18, x:0, y:6}; ED.commit('Contour'); return this.render(); }
     if (k === 'olnOff' && L){ delete L.oln; ED.commit('Retirer le contour'); return this.render(); }
-    if (k === 'resetAdj' && L){ L.adj = {}; L.filter = 'none'; delete L.duo; ED.commit('Réinitialiser'); return this.render(); }
+    if (k === 'adjAll' && L){ let n = 0; for (const x of allLayers(P)) if ((x.t === 'image' || x.t === 'video') && x !== L){ x.filter = L.filter; x.adj = deep(L.adj || {}); if (L.pfx) x.pfx = deep(L.pfx); else delete x.pfx; n++; } ED.commit('Réglages sur toutes les images'); return toast(n ? `${n} autre${n > 1 ? 's' : ''} image${n > 1 ? 's' : ''} modifiée${n > 1 ? 's' : ''}.` : 'Aucune autre image dans le projet.'); }
+    if (k === 'resetAdj' && L){ delete L.pfx; L.adj = {}; L.filter = 'none'; delete L.duo; ED.commit('Réinitialiser'); return this.render(); }
     if (k === 'bgkAuto' && L){ const el = MEDIA.el(P.media[L.media]); if (!el) return toast('Le fichier du média est absent de cet appareil.'); L.bgk = {c:PIX.edgeColor(el), tol:30, soft:10}; ED.commit('Retirer le fond'); return this.render(); }
     if (k === 'bgkOff' && L){ delete L.bgk; ED.commit('Remettre le fond'); return this.render(); }
     if (k === 'flipX' && L){ L.flipX = !L.flipX; return ED.commit('Miroir'); }

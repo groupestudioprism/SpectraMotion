@@ -9,7 +9,7 @@ const TL = {
     this.lanes.addEventListener('pointerdown', e => this.down(e));
     // double-clic sur une image clé : change sa courbe (douce → linéaire → accélération → décélération → maintien)
     this.lanes.addEventListener('dblclick', e => { const kf = e.target.closest('[data-kf]'); if (!kf || ED.readOnly) return; const c = this.P.layers.find(l => l.id === kf.dataset.id), k = c?.kf?.[kf.dataset.kf]?.[+kf.dataset.i]; if (!k) return;
-      const order = ['ease', 'lin', 'in', 'out', 'hold']; k[2] = order[(order.indexOf(k[2] || 'ease') + 1) % order.length]; ED.commit('Courbe : ' + EASES[k[2]]); toast('Courbe de l\'image clé : ' + EASES[k[2]], 1500); });
+      const order = ['ease', 'lin', 'in', 'out', 'back', 'elastic', 'bounce', 'hold']; k[2] = order[(order.indexOf(k[2] || 'ease') + 1) % order.length]; ED.commit('Courbe : ' + EASES[k[2]]); toast('Courbe de l\'image clé : ' + EASES[k[2]], 1500); });
     this.ruler.addEventListener('pointerdown', e => this.scrubStart(e));
     window.addEventListener('pointermove', e => this.move(e));
     window.addEventListener('pointerup', e => this.up(e));
@@ -57,6 +57,7 @@ const TL = {
         }
       }
     }
+ for (const [i, mk] of (P.markers || []).entries()) L += `<div class="tl-mk" data-mk="${i}" style="left:${this.x(mk.t)}px;height:${y}px" title="${escH(mk.n || 'Repère')} · ${fmtT(mk.t)}"></div>`;
     L += `<div class="tl-end" style="left:${this.x(end)}px;height:${y}px" title="Fin du projet"></div>`;
     this.heads.innerHTML = H + `<div class="tl-hd add"><button type="button" data-th="addv" title="Ajouter un titre sur une nouvelle piste, à la tête de lecture">+ Titre</button><button type="button" data-th="adda" title="Importer un son sur une nouvelle piste audio">+ Son</button></div>`;
     this.lanes.querySelector('.tl-in').innerHTML = L; this.lanes.querySelector('.tl-in').style.height = (y + 44) + 'px'; this.lanes.querySelector('.tl-in').style.width = W + 'px';
@@ -106,7 +107,17 @@ const TL = {
       if (isM){ g.globalAlpha = .85; g.fillText(major < 1 ? t.toFixed(major < .5 ? 2 : 1).replace('.', ',') + ' s' : fmtT(t, false), x + 4, 2); }
     }
     g.globalAlpha = 1;
+    // repères (touche M) : petits drapeaux sur la règle
+    for (const mk of this.P.markers || []){ const x = mk.t * this.pps - this.scroll; if (x < -10 || x > w + 10) continue;
+      g.fillStyle = '#FFB020'; g.beginPath(); g.moveTo(x - 5, 14); g.lineTo(x + 5, 14); g.lineTo(x, 22); g.closePath(); g.fill(); if (mk.n && this.pps * 1 > 20){ g.fillStyle = ink; g.fillText(mk.n.slice(0, 14), x + 6, 14); } }
   },
+  /* repère le plus proche du pointeur sur la règle (à 7 px près) */
+  markerAt(e){ const r = this.ruler.getBoundingClientRect(), t = (e.clientX - r.left + this.scroll) / this.pps, th = 7 / this.pps; let best = -1, bd = th;
+    (this.P.markers || []).forEach((m, i) => { const d = Math.abs(m.t - t); if (d <= bd){ bd = d; best = i; } }); return best; },
+  addMarker(t = PLAY.t, n = ''){ const P = this.P; P.markers ||= []; t = round(clamp(t, 0, 36000), 3); if (P.markers.some(m => Math.abs(m.t - t) < .02)) return toast('Il y a déjà un repère ici.');
+    if (P.markers.length >= 500) return toast('500 repères au maximum.'); P.markers.push({t, n:String(n).slice(0, 40)}); P.markers.sort((a, b) => a.t - b.t); ED.commit('Ajouter un repère'); this.render(); toast(`Repère à ${fmtT(t)}`, 1400); },
+  delMarker(i){ const P = this.P; if (!P.markers?.[i]) return; P.markers.splice(i, 1); ED.commit('Supprimer le repère'); this.render(); },
+  jumpMarker(dir){ const ms = (this.P.markers || []).map(m => m.t), t = PLAY.t, n = dir > 0 ? ms.find(x => x > t + .01) : [...ms].reverse().find(x => x < t - .01); if (n != null) PLAY.seek(n, false); else toast(dir > 0 ? 'Aucun repère après la tête de lecture.' : 'Aucun repère avant la tête de lecture.', 1400); },
   playhead(t){
     const x = this.x(t); if (this.ph) this.ph.style.transform = `translateX(${x - this.scroll}px)`;
     if (this.time) this.time.textContent = fmtTC(t, this.P.fps) + ' / ' + fmtTC(PLAY.end(), this.P.fps);
@@ -115,11 +126,11 @@ const TL = {
     if (ED.studio === 'motion' && !PLAY.playing) $$('.kf-add', this.heads).forEach(b => { const c = this.P.layers.find(l => l.id === b.dataset.id); if (c) b.classList.toggle('on', kfAt(c, b.dataset.kfa, t - c.start)); });
   },
   tAt(e){ const r = this.lanes.getBoundingClientRect(); return Math.max(0, (e.clientX - r.left + this.lanes.scrollLeft) / this.pps); },
-  scrubStart(e){ e.preventDefault(); this.drag = {mode:'scrub'}; PLAY.seek(this.snapT(this.tAt(e), null, e), false); },
+  scrubStart(e){ if (e.button !== 0) return; e.preventDefault(); const mi = this.markerAt(e); if (mi >= 0){ PLAY.seek(this.P.markers[mi].t, false); return; } this.drag = {mode:'scrub'}; PLAY.seek(this.snapT(this.tAt(e), null, e), false); },
   /* aimantation : tête de lecture, bords des clips, début */
   snapT(t, self, e){
     if (!ED.snap || e?.altKey) return t; const th = 8 / this.pps; let best = t, bd = th;
-    const pts = [0, PLAY.t, ...this.P.layers.filter(l => !self || !self.includes(l.id)).flatMap(l => [l.start, l.start + l.dur])];
+    const pts = [0, PLAY.t, ...(this.P.markers || []).map(m => m.t), ...this.P.layers.filter(l => !self || !self.includes(l.id)).flatMap(l => [l.start, l.start + l.dur])];
     for (const p of pts) if (Math.abs(p - t) < bd){ bd = Math.abs(p - t); best = p; }
     return best;
   },

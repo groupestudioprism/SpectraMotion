@@ -48,6 +48,8 @@ const INSP = {
       + this.sec('Aligner', this.alignBtns(true))
       + this.sec('Ensemble', `<div class="is-acts">${sel.every(l => l.g && l.g === sel[0].g) ? `<button type="button" data-ia="ungroup">${ico('ungroup')} Dégrouper</button>` : `<button type="button" data-ia="group">${ico('group')} Grouper</button>`}<button type="button" data-ia="dup">${ico('dup')} Dupliquer</button><button type="button" data-ia="del" class="danger">${ico('trash')} Supprimer</button></div>
         <p class="is-note">Glissez un coin du cadre violet pour agrandir l'ensemble. Ctrl + G : grouper.</p>`)
+      + this.sec('Même taille', `<div class="is-acts"><button type="button" data-ia="matchW">Même largeur</button><button type="button" data-ia="matchH">Même hauteur</button></div><p class="is-note">D'après le premier élément sélectionné.</p>`)
+      + (sel.filter(l => l.t === 'video' || l.t === 'image').length >= 2 ? this.sec('Mise en page vidéo', `<div class="is-acts"><button type="button" data-ia="lay:pip">Incrustation</button><button type="button" data-ia="lay:splitV">Côte à côte</button><button type="button" data-ia="lay:splitH">Haut / bas</button><button type="button" data-ia="lay:trio">1 + 2</button><button type="button" data-ia="lay:grid">Grille de 4</button></div><p class="is-note">Les clips jouent en même temps, chacun sur sa piste.</p>`) : '')
       + this.sec('Opacité', field('Opacité', 'op', round((sel[0].op ?? 1) * 100), {type:'range', min:0, max:100, step:1, fmt:v => Math.round(v) + ' %'}));
   },
   alignBtns(dist){
@@ -67,7 +69,8 @@ const INSP = {
       <div class="is-seg" role="group" aria-label="Alignement">${[['l', 'Gauche', 'M4 6h16M4 10h10M4 14h16M4 18h10'], ['c', 'Centré', 'M4 6h16M7 10h10M4 14h16M7 18h10'], ['r', 'Droite', 'M4 6h16M10 10h10M4 14h16M10 18h10']].map(([k, n, d]) => `<button type="button" data-set="align" data-v="${k}" aria-pressed="${L.align === k}" title="${n}"><svg viewBox="0 0 24 24"><path d="${d}"/></svg></button>`).join('')}
         <button type="button" data-set="it" data-v="${!L.it}" aria-pressed="${!!L.it}" title="Italique"><i style="font:italic 700 14px Georgia">I</i></button><button type="button" data-set="up" data-v="${!L.up}" aria-pressed="${!!L.up}" title="Majuscules"><b style="font-size:12px">AA</b></button><button type="button" data-set="ul" data-v="${!L.ul}" aria-pressed="${!!L.ul}" title="Souligné"><u style="font:700 14px Georgia">U</u></button></div>
       <div class="fd2">${field('Liste', 'list', L.list || 'none', {type:'select', opts:LISTS})}${field('Dégradé vers', 'col2', L.col2 || '#14C2EC', {type:'color', clear:true})}</div>
-      ${field('Interligne', 'lh', L.lh, {type:'range', min:.7, max:2.5, step:.05, fmt:v => round(v, 2)})}${field('Espacement des lettres', 'ls', L.ls || 0, {type:'range', min:-.1, max:.5, step:.01, fmt:v => round(v, 2) + ' em'})}`)
+      ${field('Interligne', 'lh', L.lh, {type:'range', min:.7, max:2.5, step:.05, fmt:v => round(v, 2)})}${field('Espacement des lettres', 'ls', L.ls || 0, {type:'range', min:-.1, max:.5, step:.01, fmt:v => round(v, 2) + ' em'})}
+      <div class="is-acts"><button type="button" data-ia="case:up">MAJUSCULES</button><button type="button" data-ia="case:low">minuscules</button><button type="button" data-ia="case:title">Capitales</button><button type="button" data-ia="case:sent">Phrase</button><button type="button" data-ia="fitText">Ajuster au cadre</button></div>`)
       + this.sec('Style du texte', `${field('Surlignage', 'tbg', L.tbg || '#ffffff', {type:'color', clear:true})}${L.tbg ? '' : '<p class="is-note">Aucun surlignage.</p>'}
         <div class="fd2">${field('Contour', 'tstroke', L.tstroke || '#000000', {type:'color', clear:true})}${field('Épaisseur', 'tsw', L.tsw || 0, {unit:'px', min:0, max:60, dec:0})}</div>
         ${field('Ombre portée douce', 'tsh', L.tsh, {type:'check'})}`, false)
@@ -121,7 +124,7 @@ const INSP = {
         ${L.bgk || L.duo ? `<p class="is-note">${L.bgk ? 'Fond retiré' : ''}${L.bgk && L.duo ? ' · ' : ''}${L.duo ? 'Bichromie' : ''} (panneau Réglages).</p>` : ''}
         <div class="is-acts"><button type="button" data-ia="flipX">${ico('flipH')} Miroir</button><button type="button" data-ia="flipY">${ico('flipV')} Retourner</button><button type="button" data-ia="adjust">${ico('adjust')} Réglages</button></div>
         ${L.t === 'video' ? `<div class="fd2">${field('Vitesse', 'speed', L.speed || 1, {type:'select', opts:{.25:'× 0,25', .5:'× 0,5', .75:'× 0,75', 1:'× 1', 1.25:'× 1,25', 1.5:'× 1,5', 2:'× 2', 4:'× 4'}})}${field('Début dans la source', 'in', L.in || 0, {unit:'s', min:0, step:.1, dec:2})}</div>
-          ${m?.hasAudio ? field('Volume', 'vol', L.vol ?? 1, {type:'range', min:0, max:2, step:.01, fmt:v => Math.round(v * 100) + ' %'}) + `<div class="fd2">${field('Fondu entrée', 'fadeIn', L.fadeIn || 0, {unit:'s', min:0, step:.1, dec:2})}${field('Fondu sortie', 'fadeOut', L.fadeOut || 0, {unit:'s', min:0, step:.1, dec:2})}</div>` + field('Couper le son', 'mute', L.mute, {type:'check'}) : '<p class="is-note">Cette vidéo n\'a pas de son.</p>'}` : ''}
+          ${m?.hasAudio ? field('Volume', 'vol', L.vol ?? 1, {type:'range', min:0, max:2, step:.01, fmt:v => Math.round(v * 100) + ' %'}) + `<div class="fd2">${field('Fondu entrée', 'fadeIn', L.fadeIn || 0, {unit:'s', min:0, step:.1, dec:2})}${field('Fondu sortie', 'fadeOut', L.fadeOut || 0, {unit:'s', min:0, step:.1, dec:2})}</div>` + field('Couper le son', 'mute', L.mute, {type:'check'}) + audioFxHtml(L) : '<p class="is-note">Cette vidéo n\'a pas de son.</p>'}` : ''}
         ${L.t === 'video' && timed ? `<div class="is-acts">${m?.hasAudio ? `<button type="button" data-ia="detach">${ico('audio')} Détacher l'audio</button>` : ''}<button type="button" data-ia="xfade">${ico('trans')} Fondu enchaîné</button><button type="button" data-ia="freeze">${ico('photo')} Arrêt sur image</button>${m?.hasAudio ? `<button type="button" data-ia="captions">${ico('magic')} Sous-titres IA</button>` : ''}</div>` : ''}
         ${L.t === 'image' && timed ? `<div class="is-acts"><button type="button" data-ia="xfade">${ico('trans')} Fondu enchaîné avec le clip précédent</button></div>` : ''}
         ${m?.credit ? `<p class="is-note">© ${escH(m.credit.by)} · ${escH(m.credit.lic)}${m.credit.src ? ` · <a href="${escH(m.credit.src)}" target="_blank" rel="noopener">source</a>` : ''}</p>` : ''}
@@ -135,7 +138,7 @@ const INSP = {
         <div class="fd2">${field('Vitesse', 'speed', L.speed || 1, {type:'select', opts:{.5:'× 0,5', .75:'× 0,75', 1:'× 1', 1.25:'× 1,25', 1.5:'× 1,5', 2:'× 2'}})}${field('Début dans la source', 'in', L.in || 0, {unit:'s', min:0, step:.1, dec:2})}</div>
         <div class="fd2">${field('Graves', 'eqLo', L.eqLo || 0, {type:'range', min:-15, max:15, step:1, fmt:v => (v > 0 ? '+' : '') + Math.round(v) + ' dB'})}${field('Aigus', 'eqHi', L.eqHi || 0, {type:'range', min:-15, max:15, step:1, fmt:v => (v > 0 ? '+' : '') + Math.round(v) + ' dB'})}</div>
         ${field('Panoramique', 'pan', L.pan || 0, {type:'range', min:-1, max:1, step:.05, fmt:v => Math.abs(v) < .01 ? 'centre' : (v < 0 ? 'gauche ' : 'droite ') + Math.round(Math.abs(v) * 100) + ' %'})}
-        ${field('Couper le son', 'mute', L.mute, {type:'check'})}<div class="is-acts"><button type="button" data-ia="captions">${ico('magic')} Sous-titres IA</button></div>${m?.credit ? `<p class="is-note">© ${escH(m.credit.by)} · ${escH(m.credit.lic)}</p>` : ''}<p class="is-note">${escH(m?.name || '')}${m?.dur ? ' · ' + fmtT(m.dur) : ''}</p>`);
+        ${field('Couper le son', 'mute', L.mute, {type:'check'})}${audioFxHtml(L)}<div class="is-acts"><button type="button" data-ia="captions">${ico('magic')} Sous-titres IA</button></div>${m?.credit ? `<p class="is-note">© ${escH(m.credit.by)} · ${escH(m.credit.lic)}</p>` : ''}<p class="is-note">${escH(m?.name || '')}${m?.dur ? ' · ' + fmtT(m.dur) : ''}</p>`);
     }
     if (L.t !== 'audio'){
       h += this.sec('Disposition', `<div class="fd2">${field('X', 'x', kfVal(L, 'x', tl), {unit:'px', ...kfo('x')})}${field('Y', 'y', kfVal(L, 'y', tl), {unit:'px', ...kfo('y')})}</div>
@@ -145,6 +148,7 @@ const INSP = {
         ${this.alignBtns(false)}`);
       h += this.sec('Animation', `<div class="fd2">${field('Entrée', 'tin.k', L.tin.k, {type:'select', opts:L.t === 'text' ? FX_IN : Object.fromEntries(Object.entries(FX_IN).filter(([k]) => !TEXT_FX.has(k)))})}${field('Durée', 'tin.d', L.tin.d, {unit:'s', min:.05, step:.1, dec:2})}</div>
         <div class="fd2">${field('Sortie', 'tout.k', L.tout.k, {type:'select', opts:FX_OUT})}${field('Durée', 'tout.d', L.tout.d, {unit:'s', min:.05, step:.1, dec:2})}</div>
+        ${Object.keys(L.kf || {}).length || KF.clip ? `<div class="is-acts"><button type="button" data-ia="kfCopy"${Object.keys(L.kf || {}).length ? '' : ' disabled'}>Copier les images clés</button><button type="button" data-ia="kfPaste"${KF.clip ? '' : ' disabled'}>Coller</button><button type="button" data-ia="kfRev"${Object.keys(L.kf || {}).length ? '' : ' disabled'}>Inverser</button><button type="button" data-ia="kfClear"${Object.keys(L.kf || {}).length ? '' : ' disabled'}>Effacer</button></div>` : ''}
         ${anim ? `<p class="is-note">◆ à côté d'une valeur : l'animer avec des images clés à la tête de lecture.</p>` : '<p class="is-note">Visible dans les studios Vidéo et Motion, et à l\'export vidéo.</p>'}`, timed);
     }
     if (timed) h += this.sec('Temps', `<div class="fd2">${field('Début', 'start', L.start, {unit:'s', min:0, step:.1, dec:2})}${field('Durée', 'dur', L.dur, {unit:'s', min:.04, step:.1, dec:2})}</div>`);
@@ -177,6 +181,11 @@ const INSP = {
     if (k === 'group') return ED.group(); if (k === 'ungroup') return ED.ungroup();
     if (k === 'present') return PRESENT.open();
     if (k === 'detach') return VTOOLS.detach(L); if (k === 'xfade') return VTOOLS.crossfade(L); if (k === 'freeze') return VTOOLS.freeze(L); if (k === 'captions') return AI.captions();
+    if (k === 'normalize') return VTOOLS.normalize(L); if (k === 'beats') return VTOOLS.beats(L);
+    if (k === 'kfCopy') return KF.copy(L); if (k === 'kfPaste') return KF.paste(ED.selLayers().filter(x => x.t !== 'audio')); if (k === 'kfRev') return KF.reverse(L); if (k === 'kfClear') return KF.clear([L]);
+    if (k && k.startsWith('case:')) return EDX.textCase(ED.selLayers(), k.slice(5)); if (k === 'fitText') return EDX.fitText(ED.selLayers());
+    if (k && k.startsWith('lay:')) return VTOOLS.layout(k.slice(4), ED.selLayers().map(x => x.id));
+    if (k === 'matchW' || k === 'matchH') return EDX.matchSize(ED.selLayers().filter(x => x.t !== 'audio'), k === 'matchW' ? 'w' : 'h');
     if (k === 'mockClear' && L){ L.media = ''; return ED.commit('Vider l\'écran'); }
     if (k === 'selgrp' && L?.g) return ED.select(P.layers.filter(x => x.g === L.g).map(x => x.id));
     if (k === 'front' || k === 'back') ED.zorder(k === 'front' ? 1 : -1);
@@ -189,6 +198,9 @@ const INSP = {
   },
 };
 
+const audioFxHtml = L => `<div class="fd2">${field('Réverbération', 'rev', L.rev || 0, {type:'range', min:0, max:100, step:1, fmt:v => Math.round(v) ? Math.round(v) + ' %' : 'aucune'})}${field('Écho', 'echo', L.echo || 0, {type:'range', min:0, max:100, step:1, fmt:v => Math.round(v) ? Math.round(v) + ' %' : 'aucun'})}</div>
+  <div class="fd2">${field('Compresseur', 'comp', !!L.comp, {type:'check'})}${field('Baisser sous les autres pistes', 'duck', !!L.duck, {type:'check'})}</div>
+  <div class="is-acts"><button type="button" data-ia="normalize">Normaliser le volume</button>${TIMED(ED.studio) ? '<button type="button" data-ia="beats">Repères sur les temps forts</button>' : ''}</div>`;
 /* liste des polices rangées par style, chaque nom écrit dans sa police */
 function fontSelect(cur){
   return `<label class="fd sel"><span>Police</span><select data-p="font">${FONT_CATS.map(c => `<optgroup label="${c}">${FONTS_M.filter(f => f[2] === c).map(f => `<option value="${escH(f[0])}"${f[0] === cur ? ' selected' : ''}>${escH(f[0])}</option>`).join('')}</optgroup>`).join('')}</select></label>`;

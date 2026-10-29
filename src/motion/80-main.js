@@ -275,6 +275,7 @@ const ED = {
         else if (a === 'tin' || a === 'tout'){ X[a] = {...X[a], [b]:b === 'd' ? clamp(v, .05, 30) : v}; }
         else if (a === 'shadow' && X.shadow){ X.shadow[b] = b === 'c' ? v + (X.shadow.c.length > 7 ? X.shadow.c.slice(7) : '66') : v; }
         else if (a === 'tfx' && X.tfx){ X.tfx[b] = b === 'c' ? v : +v; }
+        else if (a === 'pfx' && X.pfx){ X.pfx[b] = +v; }
         continue;
       }
       if (p === 'sc') v = clamp(v / 100, .01, 50); if (p === 'op') v = clamp(v / 100, 0, 1);
@@ -285,13 +286,13 @@ const ED = {
       if (p === 'in'){ const m = P.media[X.media]; X.in = round(clamp(v, 0, Math.max(0, (m?.dur || 1e9) - .05)), 3); continue; }
       if (p === 'w' || p === 'h') v = Math.max(1, v);
       if (p === 'href'){ v = String(v).trim(); if (v && !/^(https?:|mailto:|tel:)/i.test(v)) v = 'https://' + v; if (v && !hrefOk(v)){ if (final) toast('Adresse non valide (https://…, mailto:… ou tel:…)'); continue; } if (!v){ delete X.href; continue; } }
-      if (['fw', 'r', 'sw', 'tsw', 'fs', 'ga', 'lh', 'ls', 'vol', 'fadeIn', 'fadeOut', 'eqLo', 'eqHi', 'pan', 'curve', 'pats', 'bw'].includes(p)) v = +v;
+      if (['fw', 'r', 'sw', 'tsw', 'fs', 'ga', 'lh', 'ls', 'vol', 'fadeIn', 'fadeOut', 'eqLo', 'eqHi', 'pan', 'curve', 'pats', 'bw', 'rev', 'echo'].includes(p)) v = +v;
       if (p === 'font' && X.t !== 'text') fontNeed(v).then(() => document.fonts?.load(`700 40px ${fontCss(v)}`)).then(() => STAGE.paint()).catch(() => {});
       if (p === 'font' && X.t === 'text'){ fontNeed(v).then(() => document.fonts?.load(textFont(X))).then(() => { X.h = Math.max(measureText(X).h, 4); STAGE.paint(); }).catch(() => {}); }
       if (p === 'txt' && X.t === 'qr' && !qrMatrix(String(v), X.ecc || 'M')){ toast('Texte trop long pour un QR code'); continue; }
       X[p] = v;
       if (X.t === 'text' && ['txt', 'font', 'fs', 'fw', 'w', 'lh', 'ls', 'up', 'it', 'tbg', 'tbgPad', 'curve', 'list'].includes(p)) X.h = Math.max(measureText(X).h, 4);
-      if ((p === 'eqLo' || p === 'eqHi' || p === 'pan') && final && PLAY.playing){ PLAY.pause(); PLAY.play(); }
+      if (['eqLo', 'eqHi', 'pan', 'rev', 'echo', 'comp', 'duck'].includes(p) && final && PLAY.playing){ PLAY.pause(); PLAY.play(); }
     }
     if (out){ const r = el.closest('label'); const f = {sc:x => Math.round(x) + ' %', op:x => Math.round(x) + ' %'}[p]; out.textContent = el.type === 'range' ? (r.dataset.fmt || '') : ''; if (el.type === 'range') out.textContent = this.fmtOut(p, v); }
     if (p === 'name'){ if (final) this.commit('Renommer'); return; }
@@ -375,7 +376,7 @@ function fontsReady(P){
 
 /* ---------- câblage de l'interface ---------- */
 function wireEditor(){
-  STAGE.init(); TL.init(); PANEL.init(); INSP.init(); PAGES.init(); VERSIONS.start();
+  STAGE.init(); TL.init(); PANEL.init(); INSP.init(); PAGES.init(); VERSIONS.start(); CTX.init(); ctxEditorZones();
   $('#presentBtn').addEventListener('click', () => PRESENT.open());
   $('#stgGrid').addEventListener('click', e => { STAGE.grid = !STAGE.grid; e.currentTarget.setAttribute('aria-pressed', STAGE.grid); STAGE.overlay(); });
   $('#studioNav').innerHTML = STUDIOS.map(s => `<button type="button" role="tab" data-studio="${s.id}" aria-selected="false" title="${s.name} · ${s.desc}">${ico(s.ic)}<span>${s.name}</span></button>`).join('');
@@ -395,6 +396,7 @@ function wireEditor(){
   $('#tlNext').addEventListener('click', () => PLAY.seek(PLAY.t + 1 / ED.P.fps, false));
   $('#tlSplit').addEventListener('click', () => TL.split());
   $('#tlDel').addEventListener('click', () => ED.deleteSel());
+  $('#tlMark').addEventListener('click', () => { if (!ED.readOnly) TL.addMarker(PLAY.t); });
   $('#tlFit').addEventListener('click', () => TL.fitAll());
   $('#tlLoop').addEventListener('click', e => { PLAY.loop = !PLAY.loop; e.currentTarget.setAttribute('aria-pressed', PLAY.loop); });
   $('#tlSnap').addEventListener('click', e => { ED.snap = !ED.snap; e.currentTarget.setAttribute('aria-pressed', ED.snap); $('#stgSnap').setAttribute('aria-pressed', ED.snap); });
@@ -449,7 +451,10 @@ function onKey(e){
   if (mod && k === '0'){ e.preventDefault(); return STAGE.fit(); }
   if (mod) return;
   if (e.code === 'Space'){ e.preventDefault(); if (!e.repeat) { if (TIMED(ED.studio) || !$('#stgPlay').hidden) PLAY.toggle(); else STAGE.spaceDown = true; } return; }
+  if ((k === 'delete' || k === 'backspace') && e.shiftKey && TIMED(ED.studio) && !ED.readOnly){ e.preventDefault(); return VTOOLS.ripple(ED.selLayers().map(l => l.id)); }
   if (k === 'delete' || k === 'backspace'){ e.preventDefault(); return ED.deleteSel(); }
+  if (k === 'm' && TIMED(ED.studio) && !ED.readOnly){ e.preventDefault(); return TL.addMarker(PLAY.t); }
+  if ((k === '[' || k === ']') && TIMED(ED.studio)){ e.preventDefault(); return TL.jumpMarker(k === ']' ? 1 : -1); }
   if (k === 'escape'){ if (ED.tool !== 'select'){ ED.setTool('select'); return; } if (ED.sel.size) ED.select([]); return; }
   if (k === 'p' && !ED.readOnly && !TIMED(ED.studio)){ e.preventDefault(); PANEL.show('draw'); return ED.setTool(ED.tool === 'draw' ? 'select' : 'draw'); }
   if ((k === 'pagedown' || k === 'pageup') && !TIMED(ED.studio) && pageCount(ED.P) > 1){ e.preventDefault(); return PAGES.go(clamp((ED.P.pg || 0) + (k === 'pagedown' ? 1 : -1), 0, pageCount(ED.P) - 1)); }
@@ -511,7 +516,7 @@ function creditsDlg(){
 }
 function shortcutsDlg(){
   const rows = [['Espace', 'Lecture / pause'], ['S', 'Couper à la tête de lecture'], ['Suppr', 'Supprimer la sélection'], ['Ctrl + Z / Ctrl + Maj + Z', 'Annuler / rétablir'], ['Ctrl + C / V / D', 'Copier / coller / dupliquer'],
-    ['T', 'Ajouter un texte'], ['P', 'Crayon (dessiner) · Échap pour arrêter'], ['Ctrl + G / Ctrl + Maj + G', 'Grouper / dégrouper'], ['Page préc. / suiv.', 'Changer de page'], ['Alt + clic', 'Sélectionner un élément dans un groupe'], ['Flèches', 'Déplacer (Maj : ×10) · sans sélection : image par image'], ['J / L', 'Reculer / avancer d\'une seconde'], ['Début / Fin', 'Aller au début / à la fin'], ['Ctrl + molette', 'Zoomer'], ['Espace + glisser', 'Se déplacer dans la scène'], ['Double-clic', 'Écrire dans un texte'], ['Ctrl + E', 'Exporter'], ['Ctrl + F', 'Rechercher et remplacer'], ['Ctrl + Alt + P', 'Présenter']];
+    ['T', 'Ajouter un texte'], ['P', 'Crayon (dessiner) · Échap pour arrêter'], ['Ctrl + G / Ctrl + Maj + G', 'Grouper / dégrouper'], ['Page préc. / suiv.', 'Changer de page'], ['Alt + clic', 'Sélectionner un élément dans un groupe'], ['Flèches', 'Déplacer (Maj : ×10) · sans sélection : image par image'], ['J / L', 'Reculer / avancer d\'une seconde'], ['Début / Fin', 'Aller au début / à la fin'], ['Ctrl + molette', 'Zoomer'], ['Espace + glisser', 'Se déplacer dans la scène'], ['Double-clic', 'Écrire dans un texte'], ['Ctrl + E', 'Exporter'], ['Ctrl + F', 'Rechercher et remplacer'], ['Ctrl + Alt + P', 'Présenter'], ['M', 'Ajouter un repère (timeline)'], ['[ / ]', 'Repère précédent / suivant'], ['Maj + Suppr', 'Supprimer et rapprocher les clips suivants'], ['Clic droit', 'Menu des actions (partout)'], ['Appui long', 'Menu des actions (écran tactile)']];
   window.SWDlg.open(`<h3>Raccourcis clavier</h3><dl class="keys">${rows.map(([a, b]) => `<dt><kbd>${escH(a)}</kbd></dt><dd>${escH(b)}</dd>`).join('')}</dl><div class="dlg-acts"><button type="button" class="ap-btn" data-dlg="close">Compris</button></div>`);
 }
 

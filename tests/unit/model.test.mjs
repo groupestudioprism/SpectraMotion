@@ -7,7 +7,7 @@ import {fileURLToPath} from 'url';
 import path from 'path';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const src = ['00-util.js', '10-model.js', '12-icons.js', '32-elements.js', '33-more.js'].map(f => readFileSync(path.join(ROOT, 'src/motion', f), 'utf8')).join('\n');
-const M = new Function('document', 'window', src + '\nreturn {newProject, mkText, mkShape, mkMediaLayer, mkColor, kfVal, setKf, delKf, cleanProject, HIST, syncDur, projEnd, drawOrder, topTrack, ease, visible, fmtTC, fmtT, mkIcon, mkChart, mkQr, mkDraw, pageAdd, pageGo, pageDel, pageMove, pageCount, pageView, allLayers, rescale, docColors, recolor, qrMatrix, simplify, ICONS, mkTable, mkMock, STICKER_SET, STICKERS, parseTable, tableText, pageId};')(undefined, {});
+const M = new Function('document', 'window', src + '\nreturn {newProject, mkText, mkShape, mkMediaLayer, mkColor, kfVal, setKf, delKf, cleanProject, HIST, syncDur, projEnd, drawOrder, topTrack, ease, visible, fmtTC, fmtT, mkIcon, mkChart, mkQr, mkDraw, pageAdd, pageGo, pageDel, pageMove, pageCount, pageView, allLayers, rescale, docColors, recolor, qrMatrix, simplify, ICONS, mkTable, mkMock, STICKER_SET, STICKERS, parseTable, tableText, pageId, FILTERS, PFX, ADJ_KEYS, PIX_ADJ, FX_IN, FX_OUT, TEXT_FX, EASES, toneData, pfxData};')(undefined, {});
 
 test('nouveau projet : format et durée selon le studio', () => {
   const v = M.newProject('video'); assert.equal(v.w, 1920); assert.equal(v.h, 1080); assert.equal(v.studio, 'video'); assert.equal(v.bg, '#000000');
@@ -114,4 +114,30 @@ test('0.3 : commentaires, notes, crédits, transitions de pages', () => {
 test('0.3 : saisie des tableaux (« ; » ou tabulations)', () => {
   assert.deepEqual(M.parseTable('A ; B\n1 ; 2'), [['A', 'B'], ['1', '2']]); assert.deepEqual(M.parseTable('A\tB\n3\t4'), [['A', 'B'], ['3', '4']]);
   const P = M.newProject('design'), T = M.mkTable(P, [['x', 'y']]); assert.equal(M.tableText(T), 'x ; y');
+});
+
+test('0.4 : courbes Dépassement, Élastique, Rebond', () => {
+  for (const e of ['back', 'elastic', 'bounce']){ assert.ok(Math.abs(M.ease(e, 0)) < 1e-9, e); assert.ok(Math.abs(M.ease(e, 1) - 1) < 1e-9, e); }
+  assert.ok(M.ease('back', .6) > 1, 'dépasse'); assert.ok(M.ease('elastic', .1) > 1, 'oscille'); for (let t = 0; t <= 1; t += .05) assert.ok(M.ease('bounce', t) <= 1 + 1e-9, 'le rebond ne dépasse jamais');
+  assert.equal(Object.keys(M.EASES).length, 8);
+});
+test('0.4 : effets son, effets photo, réglages et repères assainis', () => {
+  const H = M.cleanProject({media:{med1:{kind:'audio', name:'a'}, med2:{kind:'image', name:'i'}}, markers:[{t:3, n:'B'}, {t:1, n:'A'}, {t:'x'}, {t:1e9}, null],
+    layers:[{t:'audio', media:'med1', rev:500, echo:-3, comp:1, duck:'oui', start:0, dur:2}, {t:'image', media:'med2', pfx:{k:'halftone', v:400}, adj:{expo:999, tint:-999, clarity:30, bogus:5}},
+      {t:'image', media:'med2', pfx:{k:'<img>', v:1}}, {t:'text', txt:'x', rev:50, pfx:{k:'invert'}}]});
+  const [A, I, J, T] = H.layers;
+  assert.deepEqual([A.rev, A.echo, A.comp, A.duck], [100, 0, true, true]);
+  assert.deepEqual(I.pfx, {k:'halftone', v:100}); assert.deepEqual(I.adj, {expo:100, tint:-100, clarity:30});
+  assert.equal(J.pfx, undefined, 'effet inconnu refusé'); assert.equal(T.rev, undefined); assert.equal(T.pfx, undefined, 'pas d\'effet photo sur un texte');
+  assert.deepEqual(H.markers, [{t:1, n:'A'}, {t:3, n:'B'}, {t:36000, n:''}], 'triés, bornés, invalides écartés');
+  assert.ok(Object.keys(M.FILTERS).length >= 50); for (const [, [n, a]] of Object.entries(M.FILTERS)){ assert.ok(n); for (const k of Object.keys(a)) assert.ok(M.ADJ_KEYS[k], k); }
+  for (const k of Object.keys(M.FX_IN)) if (!M.TEXT_FX.has(k)) assert.ok(M.FX_OUT[k] || ['block', 'pop', 'type'].includes(k), k);
+});
+test('0.4 : traitements au pixel (exposition, négatif, seuil, postérisation)', () => {
+  const im = () => ({width:2, height:1, data:new Uint8ClampedArray([100, 150, 200, 255, 20, 40, 60, 255])});
+  const a = im(); M.toneData(a, {expo:50}); assert.ok(a.data[0] > 100 && a.data[4] > 20, 'plus clair');
+  const b = im(); M.pfxData(b, {k:'invert', v:50}); assert.deepEqual([...b.data.slice(0, 3)], [155, 105, 55]);
+  const c = im(); M.pfxData(c, {k:'threshold', v:50}); assert.deepEqual([c.data[0], c.data[4]], [255, 0]);
+  const d = im(); M.pfxData(d, {k:'poster', v:100}); assert.ok([...d.data].filter((_, i) => i % 4 !== 3).every(v => v === 0 || v === 255), 'deux niveaux');
+  const e = im(); M.toneData(e, {}); assert.deepEqual([...e.data], [...im().data], 'sans réglage : image intacte');
 });

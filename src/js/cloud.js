@@ -713,6 +713,7 @@ window.SWShareCurrent = () => { if (!Save.pid || Save.role !== 'owner') return t
 const hm = () => $a('#homeMenu');
 let menuCancel = null;
 function openMenu(anchor, items){
+  if (anchor?.pt && window.SMCtx) return window.SMCtx.pick(anchor.pt.x, anchor.pt.y, items); // clic droit : menu au pointeur
   const m = hm(); m.innerHTML = items.map(i => i === '-' ? '<hr>' : `<button type="button" data-mi="${i.k}" class="${i.danger ? 'danger' : ''}"${i.off ? ' disabled' : ''}><b>${esc(i.t)}</b>${i.s ? `<span>${esc(i.s)}</span>` : ''}</button>`).join('');
   m.hidden = false; const r = anchor.getBoundingClientRect();
   m.style.top = Math.min(r.bottom + 4, innerHeight - m.offsetHeight - 12) + 'px';
@@ -867,6 +868,18 @@ $a('#homeBody').addEventListener('click', async e => {
   }
 });
 $a('#homeBody').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.target.matches('[data-open]') || e.target.matches('[data-folder]'))) e.target.click(); });
+/* Clic droit sur l'accueil : mêmes actions que les menus ⋮, plus la création et l'affichage */
+if (window.SMCtx){
+  const X = window.SMCtx, at = e => ({pt:{x:e.clientX, y:e.clientY}});
+  const homeItems = () => [{t:'Nouveau projet', run:() => newDoc('blank-design')}, {t:'Nouveau projet vidéo', run:() => newDoc('blank-video')}, {t:'Nouveau projet photo', run:() => newDoc('blank-photo')},
+    {t:'Nouveau dossier', off:!$a('[data-hact="newf"]') || $a('[data-hact="newf"]').disabled, run:() => $a('[data-hact="newf"]')?.click()}, {t:'Importer un fichier…', run:() => $a('#homeFile').click()}, '-',
+    {t:'Affichage en vignettes', on:H.view !== 'list', run:() => { H.view = 'grid'; store.set('sm.homeView', H.view); renderHome(); }}, {t:'Affichage en liste', on:H.view === 'list', run:() => { H.view = 'list'; store.set('sm.homeView', H.view); renderHome(); }},
+    {t:'Actualiser', run:() => loadHome()}];
+  X.zone('#homeBody [data-folder]', (e, el) => { const sh = !!el.dataset.shared, f = (sh ? H.shared?.folders : H.mine?.folders || []).find(x => x.id === el.dataset.folder); if (f) folderMenu(at(e), f, sh); return f ? [] : null; }, true);
+  X.zone('#homeBody [data-open]', (e, el) => { const p = findP(el.dataset.open, !!el.dataset.shared); if (p) docMenu(at(e), p, !!el.dataset.shared); return p ? [] : null; }, true);
+  X.zone('#home [data-tpl]', (e, el) => [{t:'Créer un projet avec ce modèle', run:() => newDoc(el.dataset.tpl)}]);
+  X.zone('#homeBody, #homeHero, #homeMain', () => homeItems());
+}
 /* Glisser un fichier sur l'accueil : import */
 $a('#home').addEventListener('dragover', e => { if ([...(e.dataTransfer?.types || [])].includes('Files')){ e.preventDefault(); $a('#home').classList.add('drop'); } });
 $a('#home').addEventListener('dragleave', e => { if (e.target === $a('#home') || !$a('#home').contains(e.relatedTarget)) $a('#home').classList.remove('drop'); });

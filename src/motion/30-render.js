@@ -4,7 +4,7 @@ const SUPPORTS_FILTER = (() => { try { const c = document.createElement('canvas'
 /* état animé d'un calque à l'instant t : propriétés interpolées + effets d'entrée et de sortie */
 function layerState(L, t, P, noFx){
   const tl = t - L.start;
-  const s = {x:kfVal(L, 'x', tl), y:kfVal(L, 'y', tl), sc:kfVal(L, 'sc', tl), rot:kfVal(L, 'rot', tl), op:kfVal(L, 'op', tl), dx:0, dy:0, k:1, ky:1, blur:0, wipe:1, wipeU:1, iris:1, block:1, chars:1, words:1, w:L.w, h:L.h};
+  const s = {x:kfVal(L, 'x', tl), y:kfVal(L, 'y', tl), sc:kfVal(L, 'sc', tl), rot:kfVal(L, 'rot', tl), op:kfVal(L, 'op', tl), dx:0, dy:0, k:1, ky:1, blur:0, wipe:1, wipeU:1, iris:1, block:1, chars:1, words:1, lt:1, ltUp:false, w:L.w, h:L.h};
   const fx = (f, p, out) => {
     if (!f || f.k === 'none' || p >= 1) return;
     const e = out ? ease('in', 1 - p) : ease('out', p), r = out ? 1 - e : e; // r : 0 (caché) → 1 (en place)
@@ -28,6 +28,14 @@ function layerState(L, t, P, noFx){
       case 'block': s.block = clamp(p, 0, 1); s.blockC = f.c || '#7B2FF7'; break;
       case 'type': s.chars = clamp(p, 0, 1); break;
       case 'words': s.words = clamp(p, 0, 1); break;
+      case 'letters': s.lt = clamp(p, 0, 1); break;
+      case 'lettersUp': s.lt = clamp(p, 0, 1); s.ltUp = true; break;
+      case 'shake': s.dx += Math.sin(p * Math.PI * 9) * (1 - p) * Math.min(W, H) * .03; s.op *= Math.min(1, r * 4); break;
+      case 'stretch': s.k *= 1; s.ky *= .2 + .8 * r; s.dy += (1 - r) * s.h * .4; s.op *= Math.min(1, r * 2); break;
+      case 'swing': s.rot += Math.sin((1 - r) * Math.PI * 2.5) * (1 - r) * 25 * (out ? -1 : 1); s.op *= Math.min(1, r * 3); break;
+      case 'blurZoom': s.k *= 1 + (1 - r) * .6; s.blur += (1 - r) * 18; s.op *= r; break;
+      case 'rise': s.dy += (out ? -1 : 1) * (1 - r) * s.h * .6; s.op *= r; s.wipeU = Math.min(s.wipeU, .2 + .8 * r); break;
+      case 'grow': s.k *= Math.max(.01, r); break;
     }
   };
   if (!noFx && L.tin?.k !== 'none') fx(L.tin, clamp(tl / Math.max(.05, Math.min(L.tin.d, L.dur)), 0, 1), false);
@@ -136,7 +144,7 @@ function textFill(ctx, L, w, h){
   if (!L.col2) return L.col || '#000';
   const g = ctx.createLinearGradient(0, 0, w, h * .25); g.addColorStop(0, L.col || '#000'); g.addColorStop(1, L.col2); return g;
 }
-function drawText(ctx, L, w, h, chars = 1, words = 1){
+function drawText(ctx, L, w, h, chars = 1, words = 1, lt = 1, ltUp = false){
   ctx.font = textFont(L); ctx.textBaseline = 'middle';
   const fx = L.tfx && L.tfx.k !== 'none' ? L.tfx : null, k = fx ? (fx.d ?? 50) / 50 : 1, fc = fx?.c || '#FF3F86';
   if (L.curve) return drawCurved(ctx, L, w, h, chars, fx, k, fc);
@@ -154,8 +162,9 @@ function drawText(ctx, L, w, h, chars = 1, words = 1){
     const tw = ctx.measureText(p.full).width, bx = L.align === 'l' ? 0 : L.align === 'r' ? w - tw - pad * 2 : (w - tw) / 2 - pad;
     ctx.save(); ctx.shadowColor = 'transparent'; ctx.fillStyle = L.tbg; roundRect(ctx, bx, p.y - lh / 2, tw + pad * 2, lh, L.fs * .18); ctx.fill(); ctx.restore();
   }
-  const each = (fn) => parts.forEach(p => fn(p.s, ax, p.y));
   const fill = textFill(ctx, L, w, h);
+  if (lt < 1) return drawLetters(ctx, L, parts, ax, lt, ltUp, fill);
+  const each = (fn) => parts.forEach(p => fn(p.s, ax, p.y));
   // effets placés derrière le texte
   if (fx){
     const off = L.fs * .06 * k;
@@ -173,6 +182,23 @@ function drawText(ctx, L, w, h, chars = 1, words = 1){
   if (fx && (fx.k === 'hollow' || fx.k === 'splice')){ ctx.strokeStyle = fill; ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(1, L.fs * .028 * (.6 + k * .4)); each((s, x, y) => ctx.strokeText(s, x, y)); }
   else { ctx.fillStyle = fill; each((s, x, y) => ctx.fillText(s, x, y)); if (fx?.k === 'neon'){ ctx.shadowBlur = L.fs * .12 * k; each((s, x, y) => ctx.fillText(s, x, y)); } }
   if (L.ul){ ctx.shadowColor = 'transparent'; ctx.fillStyle = fill; for (const p of parts){ const tw = ctx.measureText(p.s).width, x = L.align === 'l' ? ax : L.align === 'r' ? ax - tw : ax - tw / 2; ctx.fillRect(x, p.y + L.fs * .42, tw, Math.max(1, L.fs * .06)); } }
+}
+/* apparition lettre par lettre (fondu, ou montée) : chaque lettre a sa propre fenêtre de temps */
+function drawLetters(ctx, L, parts, ax, lt, up, fill){
+  const total = Math.max(1, parts.reduce((a, p) => a + p.full.length, 0)); let j = 0;
+  const a0 = ctx.globalAlpha; ctx.fillStyle = fill; ctx.strokeStyle = L.tstroke || fill; ctx.lineJoin = 'round';
+  for (const p of parts){
+    const ln = p.full, tw = ctx.measureText(ln).width, x0 = L.align === 'l' ? ax : L.align === 'r' ? ax - tw : ax - tw / 2;
+    ctx.textAlign = 'left';
+    for (let i = 0; i < ln.length; i++, j++){
+      const q = clamp((lt - j / total * .7) / .3, 0, 1); if (q <= 0 || ln[i] === ' ') continue;
+      const x = x0 + ctx.measureText(ln.slice(0, i)).width, y = p.y + (up ? (1 - ease('out', q)) * L.fs * .7 : 0);
+      ctx.globalAlpha = a0 * q;
+      if (L.tstroke && L.tsw){ ctx.lineWidth = L.tsw; ctx.strokeText(ln[i], x, y); }
+      ctx.fillText(ln[i], x, y);
+    }
+  }
+  ctx.globalAlpha = a0;
 }
 function drawCurved(ctx, L, w, h, chars, fx, k, fc){
   const g = curveGeom(ctx, L), up = L.curve > 0, n = [...g.txt].length, show = chars < 1 ? Math.floor(n * chars) : n;
@@ -231,6 +257,7 @@ function renderFrame(ctx, P, t, o = {}){
       ctx.beginPath(); ctx.rect(0, 0, w * ease('in', (bp - .5) * 2), h); ctx.clip();
     }
     if (L.shadow){ ctx.shadowColor = L.shadow.c; ctx.shadowBlur = L.shadow.b * scale; ctx.shadowOffsetX = L.shadow.x * scale; ctx.shadowOffsetY = L.shadow.y * scale; }
+    if (s.lt < 1) s.chars = 1;
     if (L.t === 'text' && L.tsh && !L.shadow){ ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = L.fs * .25 * scale; ctx.shadowOffsetY = L.fs * .06 * scale; }
     if (s.blur > .05 && SUPPORTS_FILTER) ctx.filter = `blur(${(s.blur * scale).toFixed(2)}px)`;
     if (L.t === 'shape' && LINE_KINDS.has(L.k)){ drawLine(ctx, L, w, h); }
@@ -241,7 +268,7 @@ function renderFrame(ctx, P, t, o = {}){
       if (L.stroke && L.sw){ ctx.shadowColor = 'transparent'; ctx.strokeStyle = L.stroke; ctx.lineWidth = L.sw; ctx.lineJoin = 'round'; if (L.dash === 'dash') ctx.setLineDash([L.sw * 3, L.sw * 2]); else if (L.dash === 'dot'){ ctx.lineCap = 'round'; ctx.setLineDash([.01, L.sw * 2]); } ctx.stroke(); ctx.setLineDash([]); }
       if (L.slot && !o.final && !f){ ctx.shadowColor = 'transparent'; ctx.fillStyle = 'rgba(123,47,247,.12)'; ctx.fill('evenodd'); }
     } else if (L.t === 'text'){
-      drawText(ctx, L, w, h, s.chars, s.words);
+      drawText(ctx, L, w, h, s.chars, s.words, s.lt, s.ltUp);
     } else if (L.t === 'icon'){ drawIcon(ctx, L, w, h);
     } else if (L.t === 'chart'){ drawChart(ctx, L, w, h);
     } else if (L.t === 'qr'){ drawQr(ctx, L, w, h);

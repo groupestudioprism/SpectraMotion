@@ -158,10 +158,11 @@ function simplify(pts, eps){
 
 /* ===== retouche au pixel : bichromie, retrait d'un fond uni, grain (résultats gardés en cache) ===== */
 const PIX = {cache:new Map(), grainCv:null,
-  key(L, el){ return [L.media, el.currentTime || 0, L.duo?.a, L.duo?.b, L.bgk?.c, L.bgk?.tol, L.bgk?.soft, L.adj?.sharp, L.oln?.c, L.oln?.w, Math.round(L.w), JSON.stringify(L.crop), el.videoWidth || el.naturalWidth].join('|'); },
+  key(L, el){ return [L.media, el.currentTime || 0, L.duo?.a, L.duo?.b, L.bgk?.c, L.bgk?.tol, L.bgk?.soft, PIX_ADJ.map(k => adjOf(L)[k] || 0).join(','), L.pfx?.k, L.pfx?.v, L.oln?.c, L.oln?.w, Math.round(L.w), JSON.stringify(L.crop), el.videoWidth || el.naturalWidth].join('|'); },
   /* image source traitée (canvas), ou l'élément d'origine si rien à faire */
   src(L, el, isVideo){
-    if (!L.duo && !L.bgk && !L.adj?.sharp && !L.oln) return el;
+    const AJ = adjOf(L), pa = PIX_ADJ.some(k => AJ[k]), pf = L.pfx && L.pfx.k !== 'none';
+    if (!L.duo && !L.bgk && !pa && !pf && !L.oln) return el;
     const k = this.key(L, el); if (!isVideo && this.cache.has(k)) return this.cache.get(k);
     const sw = el.videoWidth || el.naturalWidth, sh = el.videoHeight || el.naturalHeight; if (!sw || !sh) return el;
     const lim = isVideo ? 960 : 2400, f = Math.min(1, lim / Math.max(sw, sh)), W = Math.max(1, Math.round(sw * f)), H = Math.max(1, Math.round(sh * f));
@@ -175,7 +176,10 @@ const PIX = {cache:new Map(), grainCv:null,
       if (ka){ const dd = Math.hypot(p[i] - ka[0], p[i + 1] - ka[1], p[i + 2] - ka[2]); if (dd < tol) p[i + 3] = 0; else if (dd < tol + soft) p[i + 3] = Math.round(p[i + 3] * (dd - tol) / soft); }
       if (A){ const l = (p[i] * .299 + p[i + 1] * .587 + p[i + 2] * .114) / 255; p[i] = A[0] + (B[0] - A[0]) * l; p[i + 1] = A[1] + (B[1] - A[1]) * l; p[i + 2] = A[2] + (B[2] - A[2]) * l; }
     }
-    if (L.adj?.sharp) sharpenData(im, L.adj.sharp);
+    if (AJ.clarity) clarityData(im, AJ.clarity);
+    if (pa) toneData(im, AJ);
+    if (AJ.sharp) sharpenData(im, AJ.sharp);
+    if (pf) pfxData(im, L.pfx, W / Math.max(1, L.w));
     g.putImageData(im, 0, 0);
     let res = cv;
     if (L.oln){ res = outlined(cv, L.oln.c, Math.max(1, Math.round(L.oln.w * W / Math.max(1, L.w)))); res.naturalWidth = res.width; res.naturalHeight = res.height; }
@@ -198,6 +202,62 @@ const PIX = {cache:new Map(), grainCv:null,
     return '#' + best.map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
   },
 };
+
+/* réglages au pixel : exposition, ombres, hautes lumières, vibrance, teinte vert / magenta */
+function toneData(im, a){
+  const d = im.data, ex = 2 ** ((a.expo || 0) / 100 * 1.6), sh = (a.shadows || 0) / 100, hi = (a.highlights || 0) / 100, vb = (a.vibrance || 0) / 100, tn = (a.tint || 0) / 100;
+  if (!ex && !sh && !hi && !vb && !tn) return;
+  for (let i = 0; i < d.length; i += 4){
+    let r = d[i] * ex, g = d[i + 1] * ex, b = d[i + 2] * ex;
+    if (sh || hi){ const l = clamp((r * .299 + g * .587 + b * .114) / 255, 0, 1), add = (sh * (1 - l) ** 2 * .55 + hi * l * l * .5) * 255; r += add; g += add; b += add; }
+    if (vb){ const mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx > 0 ? (mx - mn) / mx : 0, k = vb * (1 - sat) * 1.2, avg = (r + g + b) / 3; r += (r - avg) * k; g += (g - avg) * k; b += (b - avg) * k; }
+    if (tn){ g -= tn * 28; r += tn * 14; b += tn * 14; }
+    d[i] = r; d[i + 1] = g; d[i + 2] = b;
+  }
+}
+/* clarté : contraste local (différence avec une version très floue, surtout dans les tons moyens) */
+function clarityData(im, v){
+  const {width:W, height:H, data:d} = im, sw = Math.max(2, Math.round(W / 24)), shh = Math.max(2, Math.round(H / 24));
+  const c = document.createElement('canvas'); c.width = W; c.height = H; c.getContext('2d').putImageData(im, 0, 0);
+  const sm = document.createElement('canvas'); sm.width = sw; sm.height = shh; const sg = sm.getContext('2d'); sg.imageSmoothingQuality = 'high'; sg.drawImage(c, 0, 0, sw, shh);
+  const bg = c.getContext('2d', {willReadFrequently:true}); bg.clearRect(0, 0, W, H); bg.imageSmoothingQuality = 'high'; bg.drawImage(sm, 0, 0, W, H);
+  const bl = bg.getImageData(0, 0, W, H).data, k = v / 100 * 1.1;
+  for (let i = 0; i < d.length; i += 4){ const l = (d[i] * .299 + d[i + 1] * .587 + d[i + 2] * .114) / 255, wgt = 1 - Math.abs(l - .5) * 1.4;
+    for (let c2 = 0; c2 < 3; c2++) d[i + c2] = d[i + c2] + (d[i + c2] - bl[i + c2]) * k * Math.max(.15, wgt); }
+}
+/* effets photo : pixeliser, postériser, décalage RVB, négatif, noir et blanc pur, trame, relief, croquis */
+function pfxData(im, f, scale = 1){
+  const {width:W, height:H, data:d} = im, v = f.v ?? 50, lum = i => d[i] * .299 + d[i + 1] * .587 + d[i + 2] * .114;
+  if (f.k === 'invert'){ for (let i = 0; i < d.length; i += 4){ d[i] = 255 - d[i]; d[i + 1] = 255 - d[i + 1]; d[i + 2] = 255 - d[i + 2]; } return; }
+  if (f.k === 'threshold'){ const th = 40 + v * 1.75; for (let i = 0; i < d.length; i += 4){ const o = lum(i) >= th ? 255 : 0; d[i] = d[i + 1] = d[i + 2] = o; } return; }
+  if (f.k === 'poster'){ const n = Math.round(2 + (100 - v) / 100 * 10), q = 255 / (n - 1); for (let i = 0; i < d.length; i += 4) for (let c = 0; c < 3; c++) d[i + c] = Math.round(d[i + c] / q) * q; return; }
+  if (f.k === 'pixel' || f.k === 'halftone'){
+    const cs = Math.max(2, Math.round((3 + v / 100 * 37) * Math.max(.2, scale) * (f.k === 'halftone' ? .7 : 1))), src = new Uint8ClampedArray(d);
+    for (let y = 0; y < H; y += cs) for (let x = 0; x < W; x += cs){
+      let r = 0, g = 0, b = 0, a = 0, n = 0; const x2 = Math.min(W, x + cs), y2 = Math.min(H, y + cs);
+      for (let yy = y; yy < y2; yy++) for (let xx = x; xx < x2; xx++){ const i = (yy * W + xx) * 4; r += src[i]; g += src[i + 1]; b += src[i + 2]; a += src[i + 3]; n++; }
+      r /= n; g /= n; b /= n; a /= n;
+      const rad = f.k === 'halftone' ? Math.sqrt(1 - (r * .299 + g * .587 + b * .114) / 255) * cs * .72 : 0, cx = x + cs / 2, cy = y + cs / 2;
+      for (let yy = y; yy < y2; yy++) for (let xx = x; xx < x2; xx++){ const i = (yy * W + xx) * 4;
+        if (f.k === 'pixel'){ d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = a; }
+        else { const inn = Math.hypot(xx + .5 - cx, yy + .5 - cy) <= rad; d[i] = d[i + 1] = d[i + 2] = inn ? 20 : 250; d[i + 3] = a; } }
+    }
+    return;
+  }
+  if (f.k === 'rgb'){ const o = Math.max(1, Math.round(W * v / 100 * .03)), src = new Uint8ClampedArray(d);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++){ const i = (y * W + x) * 4, il = (y * W + Math.max(0, x - o)) * 4, ir = (y * W + Math.min(W - 1, x + o)) * 4; d[i] = src[il]; d[i + 2] = src[ir + 2]; }
+    return; }
+  if (f.k === 'emboss' || f.k === 'sketch'){
+    const src = new Float32Array(W * H); for (let i = 0, j = 0; j < src.length; i += 4, j++) src[j] = lum(i);
+    const k = .4 + v / 100 * 1.6;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++){
+      const at = (xx, yy) => src[clamp(yy, 0, H - 1) * W + clamp(xx, 0, W - 1)], i = (y * W + x) * 4; let o;
+      if (f.k === 'emboss') o = 128 + (at(x + 1, y + 1) - at(x - 1, y - 1)) * k;
+      else { const gx = at(x + 1, y - 1) + 2 * at(x + 1, y) + at(x + 1, y + 1) - at(x - 1, y - 1) - 2 * at(x - 1, y) - at(x - 1, y + 1), gy = at(x - 1, y + 1) + 2 * at(x, y + 1) + at(x + 1, y + 1) - at(x - 1, y - 1) - 2 * at(x, y - 1) - at(x + 1, y - 1); o = 255 - Math.hypot(gx, gy) * k * .5; }
+      d[i] = d[i + 1] = d[i + 2] = o;
+    }
+  }
+}
 
 /* ===== motifs de fond (pois, rayures, quadrillage, vagues) ===== */
 const PAT_CACHE = new Map();

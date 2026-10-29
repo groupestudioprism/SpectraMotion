@@ -24,13 +24,16 @@ const TIMED = s => s === 'video' || s === 'motion' || s === 'audio';
 const LAYER_TYPES = ['image', 'video', 'audio', 'text', 'shape', 'color', 'icon', 'chart', 'qr', 'draw', 'table', 'mock'];
 const VISUAL_NAMES = {text:'Texte', image:'Image', video:'Vidéo', audio:'Son', color:'Couleur', icon:'Icône', chart:'Graphique', qr:'QR code', draw:'Dessin', table:'Tableau', mock:'Maquette'};
 const ANIM_PROPS = ['x', 'y', 'sc', 'rot', 'op'];
-const EASES = {lin:'Linéaire', ease:'Douce', in:'Accélération', out:'Décélération', hold:'Maintien'};
-const ease = (k, t) => k === 'hold' ? 0 : k === 'in' ? t * t * t : k === 'out' ? 1 - (1 - t) ** 3 : k === 'ease' ? (t < .5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2) : t;
+const EASES = {lin:'Linéaire', ease:'Douce', in:'Accélération', out:'Décélération', hold:'Maintien', back:'Dépassement', elastic:'Élastique', bounce:'Rebond'};
+const bounceOut = t => { const n = 7.5625, d = 2.75; return t < 1 / d ? n * t * t : t < 2 / d ? n * (t -= 1.5 / d) * t + .75 : t < 2.5 / d ? n * (t -= 2.25 / d) * t + .9375 : n * (t -= 2.625 / d) * t + .984375; };
+const ease = (k, t) => k === 'hold' ? 0 : k === 'in' ? t * t * t : k === 'out' ? 1 - (1 - t) ** 3 : k === 'ease' ? (t < .5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2)
+  : k === 'back' ? 1 + 2.70158 * (t - 1) ** 3 + 1.70158 * (t - 1) ** 2 : k === 'elastic' ? (t <= 0 ? 0 : t >= 1 ? 1 : 2 ** (-10 * t) * Math.sin((t * 10 - .75) * (2 * Math.PI / 3)) + 1) : k === 'bounce' ? bounceOut(t) : t;
 const FX_IN = {none:'Aucun', fade:'Fondu', slideL:'Glisser depuis la gauche', slideR:'Glisser depuis la droite', slideU:'Monter', slideD:'Descendre', zoom:'Zoom', pop:'Rebond', wipe:'Volet', blur:'Flou',
-  rotate:'Tourner', drop:'Tomber', flip:'Basculer', spin:'Tourbillon', wipeU:'Volet vers le haut', iris:'Iris', block:'Bloc coloré', type:'Machine à écrire', words:'Mot par mot'};
+  rotate:'Tourner', drop:'Tomber', flip:'Basculer', spin:'Tourbillon', wipeU:'Volet vers le haut', iris:'Iris', block:'Bloc coloré', shake:'Secousse', stretch:'Étirement', swing:'Balancier', blurZoom:'Zoom flou', rise:'Élévation', grow:'Grandir',
+  type:'Machine à écrire', words:'Mot par mot', letters:'Lettre par lettre', lettersUp:'Lettres qui montent'};
 const FX_OUT = {none:'Aucun', fade:'Fondu', slideL:'Sortir à gauche', slideR:'Sortir à droite', slideU:'Monter', slideD:'Descendre', zoom:'Zoom', pop:'Rebond', wipe:'Volet', blur:'Flou',
-  rotate:'Tourner', drop:'Tomber', flip:'Basculer', spin:'Tourbillon', wipeU:'Volet vers le haut', iris:'Iris'};
-const TEXT_FX = new Set(['type', 'words']);
+  rotate:'Tourner', drop:'Tomber', flip:'Basculer', spin:'Tourbillon', wipeU:'Volet vers le haut', iris:'Iris', shake:'Secousse', stretch:'Étirement', swing:'Balancier', blurZoom:'Zoom flou', rise:'Élévation', grow:'Grandir'};
+const TEXT_FX = new Set(['type', 'words', 'letters', 'lettersUp']);
 const BLENDS = {'source-over':'Normal', multiply:'Produit', screen:'Superposition claire', overlay:'Incrustation', darken:'Obscurcir', lighten:'Éclaircir', 'color-dodge':'Densité couleur −', 'soft-light':'Lumière tamisée', difference:'Différence', luminosity:'Luminosité',
   'hard-light':'Lumière crue', 'color-burn':'Densité couleur +', exclusion:'Exclusion', hue:'Teinte', saturation:'Saturation', color:'Couleur'};
 const FILTERS = {none:['Original', {}], vivid:['Éclatant', {sat:35, con:8}], warm:['Chaud', {temp:25, sat:10}], cool:['Froid', {temp:-25}], bw:['Noir et blanc', {sat:-100, con:10}],
@@ -38,8 +41,17 @@ const FILTERS = {none:['Original', {}], vivid:['Éclatant', {sat:35, con:8}], wa
   vintage:['Vintage', {sepia:35, con:-10, sat:-20, fade:25, vig:30}], film:['Pellicule', {con:12, sat:-12, grain:35, fade:15}], polaroid:['Polaroïd', {bri:8, con:-8, temp:12, fade:30}], mono:['Mono contrasté', {sat:-100, con:45, bri:-5}],
   pastel:['Pastel', {sat:-30, bri:14, con:-18, fade:20}], cine:['Cinéma', {con:20, sat:-8, temp:-12, vig:35}], golden:['Doré', {temp:40, sat:18, bri:4}], frost:['Givré', {temp:-40, bri:10, sat:-20}],
   rose:['Rosé', {hue:-12, sat:15, temp:10, bri:6}], neon:['Néon', {sat:70, con:25, hue:20}], lomo:['Lomo', {sat:30, con:30, vig:60}], soft:['Doux', {blur:.6, bri:8, con:-12}],
-  noir:['Film noir', {sat:-100, con:60, vig:50, grain:25}], summer:['Été', {temp:22, sat:25, bri:8}], autumn:['Automne', {temp:30, hue:-8, sat:10, con:8}], ocean:['Océan', {temp:-25, hue:8, sat:20}]};
-const ADJ_KEYS = {bri:['Luminosité', -100, 100], con:['Contraste', -100, 100], sat:['Saturation', -100, 100], hue:['Teinte', -180, 180], temp:['Température', -100, 100], sepia:['Sépia', 0, 100], blur:['Flou', 0, 30], vig:['Vignettage', 0, 100], fade:['Voile', 0, 100], grain:['Grain', 0, 100], sharp:['Netteté', 0, 100]};
+  noir:['Film noir', {sat:-100, con:60, vig:50, grain:25}], summer:['Été', {temp:22, sat:25, bri:8}], autumn:['Automne', {temp:30, hue:-8, sat:10, con:8}], ocean:['Océan', {temp:-25, hue:8, sat:20}],
+  hdr:['HDR', {clarity:60, vibrance:30, shadows:30, highlights:-30}], matte:['Mat', {shadows:35, con:-15, fade:20}], crisp:['Net', {clarity:40, sharp:40, con:10}], bright:['Lumineux', {expo:25, shadows:20, vibrance:15}],
+  moody:['Sombre', {expo:-20, highlights:-30, sat:-20, vig:40}], teal:['Sarcelle et orange', {tint:-15, temp:20, vibrance:30, con:15}], pink:['Barbe à papa', {tint:30, bri:10, sat:-10, fade:15}], forest:['Forêt', {tint:-30, sat:10, shadows:-10}],
+  desert:['Désert', {temp:35, sat:-15, highlights:-15, grain:15}], arctic:['Arctique', {temp:-35, expo:15, sat:-30}], vivid2:['Pop', {vibrance:60, con:20, clarity:20}], muted:['Feutré', {sat:-40, fade:20, con:-10}],
+  bw2:['Argentique', {sat:-100, con:25, grain:40, vig:30}], bwsoft:['Noir et blanc doux', {sat:-100, con:-10, shadows:20}], sun:['Coucher de soleil', {temp:45, tint:15, vig:25}], neon2:['Cyberpunk', {tint:40, temp:-30, con:30, vibrance:40}],
+  retro:['Rétro 70', {temp:30, sat:-20, fade:30, grain:25, hue:-6}], cold:['Bleu nuit', {temp:-50, expo:-10, sat:-10}], gold2:['Heure dorée', {temp:35, expo:10, highlights:-20, vibrance:20}], clean:['Épuré', {expo:10, shadows:15, highlights:-10, clarity:15}],
+  chrome:['Chrome', {con:15, sat:20, temp:8, clarity:15}], velvia:['Velvia', {vibrance:45, con:12, tint:-8}], selenium:['Sélénium', {sat:-100, temp:-20, con:15}], infra:['Infrarouge', {hue:180, sat:-40, con:20, expo:10}]};
+const ADJ_KEYS = {bri:['Luminosité', -100, 100], con:['Contraste', -100, 100], sat:['Saturation', -100, 100], hue:['Teinte', -180, 180], temp:['Température', -100, 100], sepia:['Sépia', 0, 100], blur:['Flou', 0, 30], vig:['Vignettage', 0, 100], fade:['Voile', 0, 100], grain:['Grain', 0, 100], sharp:['Netteté', 0, 100],
+  expo:['Exposition', -100, 100], shadows:['Ombres', -100, 100], highlights:['Hautes lumières', -100, 100], vibrance:['Vibrance', -100, 100], tint:['Teinte vert / magenta', -100, 100], clarity:['Clarté', -100, 100]};
+const PIX_ADJ = ['sharp', 'expo', 'shadows', 'highlights', 'vibrance', 'tint', 'clarity'];
+const PFX = {none:'Aucun', pixel:'Pixeliser', poster:'Postériser', rgb:'Décalage RVB', invert:'Négatif', threshold:'Noir et blanc pur', halftone:'Trame', emboss:'Relief', sketch:'Croquis'};
 /* polices : [nom, famille de secours, catégorie, axes Google Fonts] — chargées à la demande (une police n'est téléchargée que si elle sert) */
 const FONTS_M = [
   ['Inter', 'sans-serif', 'Sans', 'wght@300;400;500;600;700;800;900'], ['Bricolage Grotesque', 'sans-serif', 'Sans', 'opsz,wght@12..96,400;12..96,800'], ['Plus Jakarta Sans', 'sans-serif', 'Sans', 'wght@400;600;700;800'],
@@ -305,8 +317,9 @@ function cleanLayers(P, arr, budget){
         if (l0.duo && hexOk(l0.duo.a) && hexOk(l0.duo.b)) L.duo = {a:l0.duo.a, b:l0.duo.b};
         if (l0.bgk && hexOk(l0.bgk.c)) L.bgk = {c:l0.bgk.c, tol:clamp(num(l0.bgk.tol, 30), 1, 100), soft:clamp(num(l0.bgk.soft, 10), 0, 50)};
         if (l0.oln && hexOk(l0.oln.c)) L.oln = {c:l0.oln.c, w:clamp(num(l0.oln.w, 12), 1, 80)};
-      } else Object.assign(L, {eqLo:clamp(num(l0.eqLo), -15, 15), eqHi:clamp(num(l0.eqHi), -15, 15), pan:clamp(num(l0.pan), -1, 1)});
-      if (t === 'video') Object.assign(L, {eqLo:clamp(num(l0.eqLo), -15, 15), eqHi:clamp(num(l0.eqHi), -15, 15), pan:clamp(num(l0.pan), -1, 1)});
+        if (l0.pfx && PFX[l0.pfx.k] && l0.pfx.k !== 'none') L.pfx = {k:l0.pfx.k, v:clamp(num(l0.pfx.v, 50), 0, 100)};
+      }
+      if (t === 'audio' || t === 'video') Object.assign(L, {eqLo:clamp(num(l0.eqLo), -15, 15), eqHi:clamp(num(l0.eqHi), -15, 15), pan:clamp(num(l0.pan), -1, 1), rev:clamp(num(l0.rev), 0, 100), echo:clamp(num(l0.echo), 0, 100), comp:!!l0.comp, duck:!!l0.duck});
     }
     if (t !== 'text' && t !== 'audio' && t !== 'draw' && t !== 'icon'){ if (hexOk(l0.stroke)) L.stroke = l0.stroke; if (isNum(+l0.sw)) L.sw = clamp(+l0.sw, 0, 200); }
     if (l0.shadow && typeof l0.shadow === 'object') L.shadow = {c:colOr(l0.shadow.c, '#00000066'), b:clamp(num(l0.shadow.b, 20), 0, 200), x:clamp(num(l0.shadow.x), -500, 500), y:clamp(num(l0.shadow.y, 8), -500, 500)};
@@ -330,6 +343,7 @@ function cleanProject(j){
     if (m.credit && typeof m.credit === 'object') P.media[k].credit = {by:strC(m.credit.by, 160), lic:strC(m.credit.lic, 60), src:/^https:\/\/[^\s<>"]+$/.test(m.credit.src || '') ? strC(m.credit.src, 400) : ''};
   }
   const budget = {n:3000};
+  if (Array.isArray(j.markers)) P.markers = j.markers.slice(0, 500).filter(m => m && isNum(+m.t)).map(m => ({t:round(clamp(+m.t, 0, 36000), 3), n:strC(m.n, 40)})).sort((a, b) => a.t - b.t);
   P.notes = strC(j.notes, 4000); if (PAGE_TR[j.ptr]) P.ptr = j.ptr; if (isNum(+j.pdur) && +j.pdur > 0) P.pdur = clamp(+j.pdur, 1, 120);
   if (Array.isArray(j.comments)) P.comments = j.comments.slice(0, 300).filter(c => c && typeof c === 'object' && c.t).map(c => ({id:/^[\w-]{2,40}$/.test(c.id) ? c.id : uid('c'), pg:strC(c.pg, 40), x:clamp(num(c.x), -1e5, 1e5), y:clamp(num(c.y), -1e5, 1e5),
     by:strC(c.by, 80), uid:strC(c.uid, 128), t:strC(c.t, 2000), ts:Math.round(num(c.ts)), done:!!c.done, re:(Array.isArray(c.re) ? c.re : []).slice(0, 50).filter(r => r && r.t).map(r => ({by:strC(r.by, 80), uid:strC(r.uid, 128), t:strC(r.t, 2000), ts:Math.round(num(r.ts))}))}));

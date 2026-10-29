@@ -166,7 +166,7 @@ async def main():
         check('fond retiré : coins transparents, sujet opaque', a[20, 20, 3] == 0 and a[405, 540, 3] == 255 and a[405, 540, 0] > 150, (a[20, 20], a[405, 540]))
         await ev(pg, "__SM.PANEL.show('adjust')"); await pg.click('#smPanel [data-duo="2"]'); await pg.wait_for_timeout(200)
         check('bichromie appliquée', await ev(pg, "!!__SM.ED.sel1().duo"))
-        await ev(pg, "__SM.PANEL.show('fx')"); check('25 filtres (+ original)', await pg.locator('#smPanel [data-filter]').count() == 26)
+        await ev(pg, "__SM.PANEL.show('fx')"); nf = await pg.locator('#smPanel [data-filter]').count(); check('au moins 25 filtres (+ original), un bouton par filtre du modèle', nf >= 26 and nf == await ev(pg, "Object.keys(__SM.FILTERS).length"), nf)
 
         print('Animation, vidéo, son')
         await pg.click('#studioNav [data-studio="motion"]'); await pg.wait_for_timeout(500)
