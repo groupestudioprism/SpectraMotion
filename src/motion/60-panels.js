@@ -1,13 +1,14 @@
 /* ---------- Panneau de gauche : ressources et outils, selon le studio actif ---------- */
 const RAIL = {
-  design:['tpl', 'shapes', 'text', 'media', 'draw', 'colors', 'bg', 'layers'],
-  photo:['media', 'adjust', 'fx', 'shapes', 'text', 'draw', 'colors', 'layers'],
-  video:['media', 'text', 'shapes', 'trans', 'fx', 'audio', 'layers'],
-  motion:['anim', 'text', 'shapes', 'media', 'draw', 'layers'],
-  audio:['audio', 'media', 'layers'],
+  design:['tpl', 'ai', 'shapes', 'text', 'media', 'stock', 'draw', 'colors', 'bg', 'comments', 'layers'],
+  photo:['media', 'adjust', 'fx', 'ai', 'stock', 'shapes', 'text', 'draw', 'colors', 'comments', 'layers'],
+  video:['media', 'stock', 'text', 'shapes', 'trans', 'fx', 'audio', 'ai', 'layers'],
+  motion:['anim', 'ai', 'text', 'shapes', 'media', 'stock', 'draw', 'layers'],
+  audio:['audio', 'stock', 'media', 'ai', 'layers'],
 };
 const PANELS = {
   tpl:['Modèles', 'tpl'], text:['Texte', 'text'], shapes:['Éléments', 'shapes'], media:['Médias', 'media'], bg:['Fond', 'bg'], layers:['Calques', 'layers'], draw:['Dessin', 'pen'], colors:['Couleurs', 'palette'],
+  ai:['Assistant IA', 'magic'], stock:['Libres de droits', 'globe'], comments:['Commentaires', 'comment'],
   adjust:['Réglages', 'adjust'], fx:['Filtres', 'fx'], trans:['Transitions', 'trans'], audio:['Audio', 'audio'], anim:['Animations', 'anim'],
 };
 const SWATCHES = ['#16131F', '#FFFFFF', '#6D3BFF', '#3D63FF', '#14C2EC', '#2FBF71', '#FFC83D', '#FF8A3D', '#F2387A', '#E8E4F2', '#0B2A4A', '#7A1F3D', '#F4EFE6', '#1F6F5C', '#B88A2E', '#5B5B66'];
@@ -35,6 +36,8 @@ const GRIDS = [
   {n:'Mosaïque', c:[[0, 0, .5, .6], [.5, 0, .5, .4], [.5, .4, .5, .6], [0, .6, .5, .4]]},
 ];
 const FRAMES = ['rect', 'round', 'ellipse', 'arch', 'blob', 'heart', 'star', 'hex', 'diamond', 'burst', 'oct', 'tri'];
+const TABLE_STYLES = [{n:'Sombre', o:{hbg:'#16131F', hcol:'#FFFFFF', alt:'#F3F1FA', bc:'#D9D5E6'}}, {n:'Violet', o:{hbg:'#7B2FF7', hcol:'#FFFFFF', alt:'#F1EAFF', bc:'#DCCBFF'}}, {n:'Bleu', o:{hbg:'#0B2A4A', hcol:'#FFFFFF', alt:'#EAF3FB', bc:'#C8DAEA'}},
+  {n:'Minimal', o:{hbg:'', hcol:'#16131F', alt:'', bc:'#16131F', bw:1}}, {n:'Vert', o:{hbg:'#1F6F5C', hcol:'#FFFFFF', alt:'#E8F5EF', bc:'#BFE1D2'}}, {n:'Chantier', o:{hbg:'#FFC300', hcol:'#1C1C1C', alt:'#FFF6D6', bc:'#E5D08A'}}];
 const TEXT_PRESETS = [
   {n:'Titre', o:{txt:'Ajoutez un titre', fs:.11, fw:800, font:'Bricolage Grotesque'}},
   {n:'Sous-titre', o:{txt:'Ajoutez un sous-titre', fs:.055, fw:600}},
@@ -48,6 +51,30 @@ const TEXT_PRESETS = [
   {n:'Néon', o:{txt:'NÉON', fs:.12, fw:800, font:'Space Grotesk', col:'#14C2EC', shadow:{c:'#14C2EC', b:40, x:0, y:0}}},
   {n:'Sous-titre vidéo', o:{txt:'Ici, les paroles de la vidéo', fs:.045, fw:600, col:'#FFFFFF', tbg:'#000000B3', tbgPad:.35, place:'bottom'}},
   {n:'Bandeau nom', o:{txt:'Camille Martin\nDirectrice artistique', fs:.042, fw:700, col:'#FFFFFF', tbg:'#6D3BFF', tbgPad:.4, align:'l', place:'lower'}},
+  {n:'Rétro', o:{txt:'RÉTRO', fs:.13, fw:400, font:'Righteous', col:'#FF8A3D', tfx:{k:'splice', c:'#16131F', d:60}}},
+  {n:'Néon rose', o:{txt:'Open', fs:.14, fw:400, font:'Pacifico', col:'#FFE3F1', tfx:{k:'neon', c:'#FF3F86', d:70}}},
+  {n:'Glitch', o:{txt:'GLITCH', fs:.12, fw:900, font:'Unbounded', col:'#FFFFFF', tfx:{k:'glitch', c:'#14C2EC', d:60}}},
+  {n:'Écho', o:{txt:'ÉCHO', fs:.13, fw:400, font:'Anton', col:'#7B2FF7', tfx:{k:'echo', c:'#7B2FF7', d:60}}},
+  {n:'Creux', o:{txt:'CREUX', fs:.13, fw:900, font:'Archivo Black', col:'#16131F', tfx:{k:'hollow', d:60}}},
+  {n:'Relief', o:{txt:'Relief', fs:.12, fw:800, font:'Bricolage Grotesque', col:'#FFFFFF', tfx:{k:'lift', c:'#000000', d:70}}},
+  {n:'Dégradé', o:{txt:'Dégradé', fs:.13, fw:900, font:'Poppins', col:'#7B2FF7', col2:'#FF3F86'}},
+  {n:'Arc-en-ciel', o:{txt:'Spectra', fs:.13, fw:900, font:'Unbounded', col:'#14C2EC', col2:'#FFC83D', tfx:{k:'shadow', c:'#7B2FF7', d:50}}},
+  {n:'Machine à écrire', o:{txt:'Il était une fois…', fs:.06, fw:400, font:'Special Elite', col:'#2B2118'}},
+  {n:'Pixel', o:{txt:'GAME OVER', fs:.06, fw:400, font:'Press Start 2P', col:'#45D69A', tfx:{k:'shadow', c:'#16131F', d:80}}},
+  {n:'Luxe', o:{txt:'Maison Prism', fs:.08, fw:400, font:'Cinzel', col:'#B8892E', ls:.15, up:true}},
+  {n:'Élégant', o:{txt:'Bienvenue', fs:.12, fw:400, font:'Great Vibes', col:'#16131F'}},
+  {n:'Marqueur', o:{txt:'À ne pas manquer !', fs:.08, fw:400, font:'Permanent Marker', col:'#F2387A'}},
+  {n:'Tableau noir', o:{txt:'Menu du jour', fs:.08, fw:700, font:'Amatic SC', col:'#FFFFFF', tbg:'#2B3A35', tbgPad:.5}},
+  {n:'Futuriste', o:{txt:'2077', fs:.15, fw:900, font:'Orbitron', col:'#14C2EC', tfx:{k:'neon', c:'#14C2EC', d:40}}},
+  {n:'Éditorial', o:{txt:'Le grand entretien', fs:.09, fw:400, font:'Playfair Display', it:true, col:'#16131F', ul:true}},
+  {n:'Badge', o:{txt:'−50 %', fs:.09, fw:900, font:'Unbounded', col:'#FFFFFF', tbg:'#F2387A', tbgPad:.35}},
+  {n:'Contour épais', o:{txt:'BOOM', fs:.15, fw:400, font:'Bungee', col:'#FFC83D', tfx:{k:'outline', c:'#16131F', d:70}}},
+  {n:'Arc', o:{txt:'• TEXTE EN ARC • TEXTE EN ARC', fs:.045, fw:700, col:'#16131F', curve:70, ls:.08}},
+  {n:'Liste à puces', o:{txt:'Premier point\nDeuxième point\nTroisième point', fs:.04, fw:500, align:'l', list:'bullet', lh:1.5}},
+  {n:'Coches', o:{txt:'Livraison offerte\nRetour gratuit\nPaiement sécurisé', fs:.04, fw:600, align:'l', list:'check', col:'#13925C', lh:1.5}},
+  {n:'Citation moderne', o:{txt:'« Faire simple, c\'est déjà faire beaucoup. »', fs:.055, fw:700, font:'Fraunces', col:'#16131F', lh:1.25}},
+  {n:'Chiffre clé', o:{txt:'98 %', fs:.2, fw:900, font:'Bebas Neue', col:'#7B2FF7', col2:'#14C2EC'}},
+  {n:'Manuscrit doux', o:{txt:'avec amour', fs:.09, fw:400, font:'Sacramento', col:'#B76E79'}},
 ];
 const ANIM_PRESETS = [
   {n:'Apparition', d:'Fondu à l\'entrée et à la sortie', a:L => { L.tin = {k:'fade', d:.6}; L.tout = {k:'fade', d:.5}; }},
@@ -85,6 +112,8 @@ const PANEL = {
     this.body.addEventListener('click', e => this.click(e));
     this.body.addEventListener('input', e => this.input(e, false));
     this.body.addEventListener('change', e => this.input(e, true));
+    this.body.addEventListener('submit', e => { const f = e.target.closest('[data-stockf]'); if (!f) return; e.preventDefault(); const q = $('#stockQ').value.trim(); if (q) STOCK.search(q, this.q.stock === 'audio' ? 'audio' : 'image'); });
+    this.body.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('#aiPal,#aiCustom')){ e.preventDefault(); this.act(e.target.id === 'aiPal' ? 'aiPal' : 'aiCustom'); } });
     this.body.addEventListener('dragstart', e => { const it = e.target.closest('[data-mid]'); if (it) e.dataTransfer.setData('text/x-sm-media', it.dataset.mid); });
     BUS.on('sel', () => { if (['adjust', 'fx', 'trans', 'anim', 'layers', 'audio', 'colors'].includes(this.cur)) this.render(); });
     BUS.on('media', () => { if (this.cur === 'media' || this.cur === 'audio') this.renderSoon(); });
@@ -161,6 +190,13 @@ const PANEL = {
         <label class="pn-search">${ico('search')}<input type="search" data-icq placeholder="Rechercher une icône" value="${escH(this.q.ic)}" aria-label="Rechercher une icône"></label>
         <div class="pn-chips">${['', ...ICON_CATS].map(c => `<button type="button" data-iccat="${escH(c)}" aria-pressed="${this.q.icCat === c}">${escH(c || 'Toutes')}</button>`).join('')}</div>
         <div class="pn-icons" id="pnIcList">${this.icList()}</div></details>
+      <details class="pn-sec" open><summary>Autocollants (${STICKER_SET.length})</summary>
+        <div class="pn-chips">${['', ...STICKER_CATS].map(c => `<button type="button" data-stkcat="${escH(c)}" aria-pressed="${(this.q.stk || '') === c}">${escH(c || 'Tous')}</button>`).join('')}</div>
+        <div class="pn-stk">${STICKER_SET.filter(x => !this.q.stk || x[2] === this.q.stk).map(x => `<button type="button" data-icon="${x[0]}" title="${escH(x[1])}"><svg viewBox="-4 -4 108 108" aria-hidden="true"><path d="${x[3]}"/></svg></button>`).join('')}</div></details>
+      <details class="pn-sec"><summary>Tableaux</summary><div class="pn-tables">${TABLE_STYLES.map((t, i) => `<button type="button" data-table="${i}" title="Tableau ${escH(t.n)}"><i style="background:${t.o.hbg || 'transparent'};border-color:${t.o.bc}"></i><i style="background:${t.o.alt || 'transparent'};border-color:${t.o.bc}"></i><i style="border-color:${t.o.bc}"></i><span>${escH(t.n)}</span></button>`).join('')}</div>
+        <p class="pn-hint">Le contenu se saisit dans les propriétés (une ligne par rangée, « ; » entre les colonnes) ou se colle depuis un tableur.</p></details>
+      <details class="pn-sec"><summary>Maquettes d'appareils</summary><div class="pn-mocks">${Object.entries(MOCKS).map(([k, n]) => `<button type="button" data-mock="${k}">${mockSvg(k)}<span>${escH(n)}</span></button>`).join('')}</div>
+        <p class="pn-hint">Glissez ensuite une capture ou une photo sur l'écran de l'appareil.</p></details>
       <details class="pn-sec"><summary>Émojis</summary><div class="pn-emoji">${EMOJIS.map(e => `<button type="button" data-emoji="${e}">${e}</button>`).join('')}</div></details>`;
   },
   p_draw(P){
@@ -194,6 +230,57 @@ const PANEL = {
       <h4 class="pn-h">Motifs</h4><div class="pn-row">${[['dots', 'Pois'], ['lines', 'Rayures'], ['grid', 'Quadrillage'], ['waves', 'Vagues']].map(([k, n]) => `<button type="button" class="pn-btn" data-pattern="${k}">${n}</button>`).join('')}</div>
       <p class="pn-hint">Dégradés et motifs s'ajoutent comme calques de fond, que vous pouvez recolorer, animer ou couper dans la timeline.</p>`;
   },
+  /* --- Assistant IA --- */
+  p_ai(P){
+    const L = ED.sel1(), ok = AI.ok(), busy = AI.busy, dis = !ok || busy ? ' disabled' : '', ex = ['Affiche pour une journée portes ouvertes dans une entreprise de BTP', 'Post Instagram pour lancer un café en centre-ville', 'Présentation de 5 diapositives : bilan des chantiers 2026', 'Invitation à un anniversaire de 30 ans, ambiance tropicale'];
+    return `${ok ? `<p class="pn-hint">${window.SMAI.left()} demande${window.SMAI.left() > 1 ? 's' : ''} restante${window.SMAI.left() > 1 ? 's' : ''} aujourd'hui.</p>` : `<div class="pn-warn">${escH(AI.why())}</div>`}
+      <h4 class="pn-h">${ico('magic')} Design magique</h4>
+      <textarea class="pn-ta" id="aiPrompt" rows="3" placeholder="Décrivez le visuel : sujet, public, ambiance, textes à mettre…"${dis}></textarea>
+      <div class="pn-chips wrap">${ex.map(x => `<button type="button" data-aiex="${escH(x)}">${escH(x.split(' ').slice(0, 4).join(' '))}…</button>`).join('')}</div>
+      ${TIMED(ED.studio) ? '' : `<div class="fd2"><label class="fd sel"><span>Pages</span><select id="aiPages">${[1, 2, 3, 4, 5, 6, 8, 10].map(n => `<option>${n}</option>`).join('')}</select></label><label class="pn-chk"><input type="checkbox" id="aiPhotos" checked> Photos libres</label></div>`}
+      <button type="button" class="pn-big" data-act="aiDesign"${dis}>${ico('magic')} Créer le design</button>
+      <p class="pn-hint">Au format actuel (${P.w} × ${P.h}). Le design remplace la page (Ctrl + Z pour revenir) ; les photos viennent de Wikimedia Commons, avec leurs crédits.</p>
+      <h4 class="pn-h">${ico('text')} Rédaction</h4>
+      ${L?.t === 'text' ? `<div class="pn-acts">${AI_TEXT_ACTS.map(([k, n]) => `<button type="button" class="pn-btn" data-aitxt="${k}"${dis}>${n}</button>`).join('')}</div>
+        <div class="pn-row"><select id="aiLangT" class="pn-sel">${Object.entries(AI_LANGS).map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select><button type="button" class="pn-btn" data-act="aiTr1"${dis}>Traduire</button></div>
+        <div class="pn-row"><input class="pn-in" id="aiCustom" placeholder="Autre consigne (ex. : plus court, en vers…)"><button type="button" class="pn-btn" data-act="aiCustom"${dis}>OK</button></div>`
+        : `<textarea class="pn-ta" id="aiWrite" rows="2" placeholder="Sujet du texte à écrire (ex. : promo de printemps pour un fleuriste)"${dis}></textarea><button type="button" class="pn-big alt" data-act="aiWrite"${dis}>Écrire un titre et un texte</button><p class="pn-hint">Sélectionnez un texte pour le corriger, le reformuler, le traduire…</p>`}
+      <h4 class="pn-h">${ico('globe')} Traduire tout le design</h4>
+      <div class="pn-row"><select id="aiLang" class="pn-sel">${Object.entries(AI_LANGS).map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select><button type="button" class="pn-btn" data-act="aiTranslate"${dis}>Traduire les ${pageCount(P) > 1 ? pageCount(P) + ' pages' : 'textes'}</button></div>
+      <h4 class="pn-h">${ico('palette')} Ambiance de couleurs</h4>
+      <div class="pn-row"><input class="pn-in" id="aiPal" placeholder="ex. : printemps japonais, océan la nuit…"><button type="button" class="pn-btn" data-act="aiPal"${dis}>Appliquer</button></div>
+      <h4 class="pn-h">${ico('video')} Sous-titres automatiques</h4>
+      <button type="button" class="pn-big alt" data-act="aiCaptions"${dis || (L && (L.t === 'audio' || L.t === 'video') ? '' : ' disabled')}>Sous-titrer le clip sélectionné</button>
+      <p class="pn-hint">Le son du clip est transcrit par l'IA puis découpé en sous-titres synchronisés, sur une nouvelle piste.</p>
+      <h4 class="pn-h">${ico('photo')} Retouche par IA (dans votre navigateur)</h4>
+      <div class="pn-row"><button type="button" class="pn-btn" data-seg="cut:auto"${L?.t === 'image' ? '' : ' disabled'}>Détourer le sujet</button><button type="button" class="pn-btn" data-seg="cut:person"${L?.t === 'image' ? '' : ' disabled'}>Détourer une personne</button><button type="button" class="pn-btn" data-seg="blur:auto"${L?.t === 'image' ? '' : ' disabled'}>Flouter le fond</button></div>
+      <p class="pn-hint">Aucune image n'est envoyée : le modèle d'IA (MediaPipe) tourne sur votre appareil. Fonctionne aussi sans compte.</p>`;
+  },
+  /* --- Photos et sons libres (Wikimedia Commons) + sons générés --- */
+  p_stock(P){
+    const tab = this.q.stock || (ED.studio === 'audio' ? 'gen' : 'image');
+    const tabs = `<div class="pn-tabs">${[['image', 'Photos'], ['audio', 'Sons'], ['gen', 'Effets et musiques']].map(([k, n]) => `<button type="button" data-stab="${k}" aria-pressed="${tab === k}">${n}</button>`).join('')}</div>`;
+    if (tab === 'gen') return tabs + `<p class="pn-hint">Créés par votre navigateur : libres de tout droit, à utiliser partout.</p>${['Effets', 'Musiques'].map(c => `<h4 class="pn-h">${c}</h4><div class="pn-sounds">${SOUNDS.filter(x => x[2] === c).map(([k, n, , d]) => `<div class="pn-snd"><button type="button" data-sprev="${k}" title="Écouter">${ico('play')}</button><b>${escH(n)}</b><small>${fmtT(d)}</small><button type="button" data-sadd="${k}" title="Ajouter au projet">${ico('plus')}</button></div>`).join('')}</div>`).join('')}`;
+    const r = STOCK.kind === tab ? STOCK.res : [];
+    return tabs + `<form class="pn-search" data-stockf>${ico('search')}<input type="search" id="stockQ" placeholder="${tab === 'audio' ? 'Pluie, oiseaux, piano…' : 'Chantier, montagne, café… (anglais conseillé)'}" value="${escH(STOCK.kind === tab ? STOCK.q : '')}" aria-label="Rechercher"></form>
+      <p class="pn-hint">Wikimedia Commons : plus de 100 millions de fichiers sous licence libre. L'auteur et la licence sont gardés avec chaque média (Fichier → Crédits).</p>
+      ${STOCK.err ? `<div class="pn-warn">${escH(STOCK.err)}</div>` : ''}
+      ${tab === 'image' ? `<div class="pn-stock">${r.map((it, i) => `<button type="button" class="st-it" data-stake="${i}" title="${escH(it.title)} · ${escH(it.by)} · ${escH(it.lic)}"><img alt="" loading="lazy" src="${escH(it.thumb)}"><span>${escH(it.lic)}</span></button>`).join('')}</div>`
+        : `<div class="pn-sounds">${r.map((it, i) => `<div class="pn-snd"><button type="button" data-aprev="${i}" title="Écouter">${ico('play')}</button><b title="${escH(it.title)}">${escH(it.title.replace(/\.[a-z0-9]+$/i, ''))}</b><small>${escH(it.lic)}</small><button type="button" data-stake="${i}" title="Ajouter">${ico('plus')}</button></div>`).join('')}</div>`}
+      ${STOCK.busy ? `<p class="pn-hint">Recherche…</p>` : STOCK.kind === tab && STOCK.q && !r.length && !STOCK.err ? '<p class="pn-hint">Aucun résultat : essayez d\'autres mots (en anglais, souvent plus de résultats).</p>' : ''}
+      ${STOCK.cont && r.length ? '<button type="button" class="pn-big alt" data-act="stockMore">Plus de résultats</button>' : ''}`;
+  },
+  /* --- Commentaires --- */
+  p_comments(P){
+    const cs = COMMENTS.list(P), other = (P.comments || []).length - cs.length, dt = ts => new Date(ts).toLocaleString('fr-FR', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'});
+    setTimeout(() => COMMENTS.pins(), 0);
+    return `<button type="button" class="pn-big${COMMENTS.placing ? ' on' : ''}" data-act="cPlace">${ico('comment')} ${COMMENTS.placing ? 'Cliquez sur la page…' : 'Ajouter un commentaire'}</button>
+      <p class="pn-hint">Les commentaires sont enregistrés avec le projet : les personnes avec qui vous le partagez les voient et peuvent répondre.${other ? ` ${other} autre${other > 1 ? 's' : ''} sur d'autres pages.` : ''}</p>
+      ${cs.length ? cs.map((c, i) => `<div class="pn-cm${c.done ? ' done' : ''}"><div class="cm-h"><b>${c.done ? '✓' : i + 1}</b><span>${escH(c.by)}</span><small>${dt(c.ts)}</small></div><p>${escH(c.t)}</p>
+        ${c.re.map(r => `<div class="cm-r"><span>${escH(r.by)}</span> ${escH(r.t)}</div>`).join('')}
+        <div class="cm-a"><input class="pn-in" data-crep="${c.id}" placeholder="Répondre…"><button type="button" class="pn-btn sm" data-cdone="${c.id}">${c.done ? 'Rouvrir' : 'Résolu'}</button><button type="button" class="pn-btn sm" data-cdel="${c.id}" title="Supprimer">${ico('trash')}</button></div></div>`).join('')
+      : `<div class="pn-empty">${ico('comment')}<b>Aucun commentaire sur cette page</b><span>Ajoutez une remarque à un endroit précis du design.</span></div>`}`;
+  },
   /* --- Médias du projet --- */
   p_media(P, only){
     const list = Object.values(P.media).filter(m => !only || m.kind === only);
@@ -218,7 +305,7 @@ const PANEL = {
         ${field('Panoramique', 'pan', a.pan || 0, {type:'range', min:-1, max:1, step:.05, fmt:v => Math.abs(v) < .01 ? 'centre' : (v < 0 ? 'gauche ' : 'droite ') + Math.round(Math.abs(v) * 100) + ' %'})}
         <div class="pn-row"><button type="button" class="pn-btn" data-eq="voice">Voix plus claire</button><button type="button" class="pn-btn" data-eq="warm">Plus chaud</button><button type="button" class="pn-btn" data-eq="radio">Radio</button><button type="button" class="pn-btn" data-eq="flat">À plat</button></div>
         <label class="pn-chk"><input type="checkbox" data-p="mute"${a.mute ? ' checked' : ''}> Couper le son</label></div>` : '')
-      + this.p_media(P, 'audio');
+      + `<button type="button" class="pn-big alt" data-act="gotoSounds">${ico('wave')} Effets sonores et musiques libres</button>` + this.p_media(P, 'audio');
   },
   /* --- Retouche --- */
   p_adjust(P){
@@ -226,6 +313,12 @@ const PANEL = {
     const k = L.bgk;
     return `<div class="pn-adj">${Object.entries(ADJ_KEYS).map(([k, [n, mn, mx]]) => field(n, 'adj.' + k, L.adj?.[k] || 0, {type:'range', min:mn, max:mx, step:1, fmt:v => (v > 0 && mn < 0 ? '+' : '') + Math.round(v), reset:true})).join('')}</div>
       <button type="button" class="pn-big alt" data-act="resetAdj">Réinitialiser les réglages</button>
+      <div class="pn-row"><button type="button" class="pn-btn" data-act="enhance">${ico('magic')} Amélioration automatique</button></div>
+      <h4 class="pn-h">Détourage par IA</h4>
+      ${L.t === 'image' ? `<div class="pn-row"><button type="button" class="pn-btn" data-seg="cut:auto">Détourer le sujet</button><button type="button" class="pn-btn" data-seg="cut:person">Détourer une personne</button><button type="button" class="pn-btn" data-seg="blur:auto">Flouter le fond</button></div>
+        <p class="pn-hint">L'IA tourne dans votre navigateur (modèle MediaPipe téléchargé une fois). Le résultat est une copie : l'original reste dans vos médias.</p>` : '<p class="pn-hint">Disponible pour les images.</p>'}
+      <h4 class="pn-h">Contour (autocollant)</h4>
+      ${L.oln ? `<div class="fd2">${field('Couleur', '@oln.c', L.oln.c, {type:'color'})}${field('Épaisseur', '@oln.w', L.oln.w, {type:'range', min:1, max:60, step:1, fmt:v => Math.round(v) + ' px'})}</div><button type="button" class="pn-btn" data-act="olnOff">Retirer le contour</button>` : '<button type="button" class="pn-btn" data-act="olnOn">Ajouter un contour blanc</button><p class="pn-hint">Idéal après un détourage : effet autocollant.</p>'}
       <h4 class="pn-h">Retirer le fond</h4>
       ${k ? `<div class="pn-card">${field('Couleur retirée', '@bgk.c', k.c, {type:'color'})}${field('Tolérance', '@bgk.tol', k.tol, {type:'range', min:1, max:100, step:1, fmt:v => Math.round(v)})}${field('Adoucir le bord', '@bgk.soft', k.soft, {type:'range', min:0, max:50, step:1, fmt:v => Math.round(v)})}
         <button type="button" class="pn-btn" data-act="bgkOff">Remettre le fond</button></div>` : `<button type="button" class="pn-big alt" data-act="bgkAuto">${ico('magic')} Retirer le fond uni</button>`}
@@ -284,6 +377,19 @@ const PANEL = {
     const g = (sel, fn) => { const b = t.closest(sel); if (b){ fn(b); return true; } return false; };
     if (ED.readOnly && !t.closest('[data-lid],[data-tplcat],[data-iccat],summary')) return toast('Projet en lecture seule');
     if (g('[data-act]', b => this.act(b.dataset.act, b))) return;
+    if (g('[data-stab]', b => { this.q.stock = b.dataset.stab; this.render(); })) return;
+    if (g('[data-stkcat]', b => { this.q.stk = b.dataset.stkcat; this.render(); })) return;
+    if (g('[data-aiex]', b => { $('#aiPrompt').value = b.dataset.aiex; })) return;
+    if (g('[data-aitxt]', b => AI.text(b.dataset.aitxt))) return;
+    if (g('[data-seg]', b => this.segRun(b.dataset.seg))) return;
+    if (g('[data-stake]', b => { const it = STOCK.res[+b.dataset.stake]; if (it) STOCK.take(it); })) return;
+    if (g('[data-aprev]', b => { const it = STOCK.res[+b.dataset.aprev]; if (it) this.preview(it.url, b); })) return;
+    if (g('[data-sprev]', b => synthSound(b.dataset.sprev).then(f => this.preview(URL.createObjectURL(f), b)))) return;
+    if (g('[data-sadd]', b => synthSound(b.dataset.sadd).then(f => ED.importFiles([f], {atHead:true})))) return;
+    if (g('[data-table]', b => { const st = TABLE_STYLES[+b.dataset.table]; ED.addLayer(mkTable(P, null, {...st.o, ...ED.timing(5), track:topTrack(P)}), {label:'Ajouter un tableau'}); })) return;
+    if (g('[data-mock]', b => ED.addLayer(mkMock(P, b.dataset.mock, {...ED.timing(5), track:topTrack(P)}), {label:'Ajouter une maquette'}))) return;
+    if (g('[data-cdone]', b => { COMMENTS.toggle(b.dataset.cdone); this.render(); })) return;
+    if (g('[data-cdel]', b => { COMMENTS.del(b.dataset.cdel); this.render(); })) return;
     if (g('[data-tplcat]', b => { this.q.tplCat = b.dataset.tplcat; $$('[data-tplcat]', this.body).forEach(x => x.setAttribute('aria-pressed', x === b)); $('#pnTplList').innerHTML = this.tplList(); this.lazyThumbs(); })) return;
     if (g('[data-iccat]', b => { this.q.icCat = b.dataset.iccat; $$('[data-iccat]', this.body).forEach(x => x.setAttribute('aria-pressed', x === b)); $('#pnIcList').innerHTML = this.icList(); })) return;
     if (g('[data-tpl]', b => ED.useTemplate(b.dataset.tpl))) return;
@@ -333,6 +439,19 @@ const PANEL = {
     if (k === 'brandFromDoc'){ ED.setBrand({...ED.brand(), colors:docColors(P).slice(0, 10)}); return this.render(); }
     if (k === 'brandApply'){ const n = recolor(P, ED.brand().colors); if (!n) return toast('Aucune couleur à remplacer'); STAGE.layout(); ED.commit('Appliquer ma charte'); return toast('Charte appliquée au design'); }
     if (k === 'animAll') return ED.animatePage();
+    if (k === 'aiDesign'){ const v = $('#aiPrompt').value.trim(); if (!v) return toast('Décrivez d\'abord le visuel souhaité.'); return AI.design(v, +($('#aiPages')?.value || 1), $('#aiPhotos') ? $('#aiPhotos').checked : false); }
+    if (k === 'aiWrite'){ const v = $('#aiWrite').value.trim(); if (!v) return toast('Indiquez le sujet du texte.'); return AI.write(v); }
+    if (k === 'aiTr1') return AI.text('translate', $('#aiLangT').value);
+    if (k === 'aiCustom'){ const v = $('#aiCustom').value.trim(); if (v) return AI.text('custom', v); return; }
+    if (k === 'aiTranslate') return AI.translate($('#aiLang').value);
+    if (k === 'aiPal'){ const v = $('#aiPal').value.trim(); if (v) return AI.palette(v); return; }
+    if (k === 'aiCaptions') return AI.captions();
+    if (k === 'stockMore') return STOCK.search(STOCK.q, STOCK.kind, true);
+    if (k === 'gotoSounds'){ this.q.stock = 'gen'; return this.show('stock'); }
+    if (k === 'cPlace'){ COMMENTS.placing = !COMMENTS.placing; $('#app').classList.toggle('commenting', COMMENTS.placing); return this.render(); }
+    if (k === 'enhance' && L){ const el = MEDIA.el(P.media[L.media]), a = el && autoEnhance(el); if (!a) return toast('Image indisponible sur cet appareil.'); L.adj = {...(L.adj || {}), ...a}; for (const x in L.adj) if (!L.adj[x]) delete L.adj[x]; ED.commit('Amélioration automatique'); return this.render(); }
+    if (k === 'olnOn' && L){ L.oln = {c:'#FFFFFF', w:12}; if (!L.shadow) L.shadow = {c:'#00000040', b:18, x:0, y:6}; ED.commit('Contour'); return this.render(); }
+    if (k === 'olnOff' && L){ delete L.oln; ED.commit('Retirer le contour'); return this.render(); }
     if (k === 'resetAdj' && L){ L.adj = {}; L.filter = 'none'; delete L.duo; ED.commit('Réinitialiser'); return this.render(); }
     if (k === 'bgkAuto' && L){ const el = MEDIA.el(P.media[L.media]); if (!el) return toast('Le fichier du média est absent de cet appareil.'); L.bgk = {c:PIX.edgeColor(el), tol:30, soft:10}; ED.commit('Retirer le fond'); return this.render(); }
     if (k === 'bgkOff' && L){ delete L.bgk; ED.commit('Remettre le fond'); return this.render(); }
@@ -356,6 +475,7 @@ const PANEL = {
   },
   input(e, final){
     const t = e.target;
+    if (t.matches('[data-crep]') && final && t.value.trim()){ COMMENTS.reply(t.dataset.crep, t.value.trim()); this.render(); return; }
     if (t.matches('[data-tplq]')){ this.q.tpl = t.value; clearTimeout(this.qt); this.qt = setTimeout(() => { $('#pnTplList').innerHTML = this.tplList(); this.lazyThumbs(); }, 120); return; }
     if (t.matches('[data-icq]')){ this.q.ic = t.value; clearTimeout(this.qt); this.qt = setTimeout(() => { $('#pnIcList').innerHTML = this.icList(); }, 100); return; }
     if (t.matches('[data-bradd]') && final){ const br = ED.brand(), c = t.value.toUpperCase(); if (!(br.colors || []).includes(c)) ED.setBrand({...br, colors:[...(br.colors || []), c].slice(0, 16)}); this.render(); return; }
@@ -396,4 +516,19 @@ function field(label, p, v, o = {}){
   if (o.type === 'text') return `<label class="fd txt" for="${id}"><span>${escH(label)}</span><input id="${id}" type="text" data-p="${p}" value="${escH(v)}" maxlength="${o.max || 40}"></label>`;
   if (o.type === 'textarea') return `<label class="fd ta" for="${id}"><span>${escH(label)}</span><textarea id="${id}" data-p="${p}" rows="3">${escH(v)}</textarea></label>`;
   return `<label class="fd num" for="${id}"><span>${escH(label)}${kf}</span><input id="${id}" type="number" data-p="${p}" value="${round(+v || 0, o.dec ?? 1)}" step="${o.step || 1}"${o.min != null ? ` min="${o.min}"` : ''}${o.max != null ? ` max="${o.max}"` : ''}>${o.unit ? `<em>${o.unit}</em>` : ''}</label>`;
+}
+
+/* aperçu sonore dans le panneau */
+PANEL.preview = function(url, btn){ if (this.au){ this.au.pause(); if (this.auBtn === btn){ this.au = null; btn.innerHTML = ico('play'); return; } this.auBtn.innerHTML = ico('play'); } const a = new Audio(url); a.play().catch(() => toast('Lecture impossible')); a.onended = () => { btn.innerHTML = ico('play'); this.au = null; }; this.au = a; this.auBtn = btn; btn.innerHTML = ico('pause'); };
+PANEL.segRun = async function(spec){
+  const [mode, kind] = spec.split(':'), L = ED.sel1(); if (!L || L.t !== 'image') return toast('Sélectionnez une image.');
+  BUSY.show(SEG.seg[kind] ? 'Détourage en cours…' : 'Chargement du modèle d\'IA (une seule fois)…');
+  try { await SEG.apply(L, mode, kind); toast(mode === 'cut' ? 'Sujet détouré (copie transparente ; Ctrl + Z pour revenir)' : 'Fond flouté (Ctrl + Z pour revenir)', 4000); }
+  catch(e){ console.warn(e); toast(e?.message || 'Détourage impossible.', 6000); } finally { BUSY.hide(); }
+};
+function mockSvg(k){
+  const p = {phone:'<rect x="7" y="2" width="10" height="20" rx="2.5"/><rect x="8.2" y="3.4" width="7.6" height="17.2" rx="1.4" class="s"/>', tablet:'<rect x="4" y="2" width="16" height="20" rx="2"/><rect x="5.4" y="3.4" width="13.2" height="17.2" rx=".8" class="s"/>',
+    laptop:'<rect x="4" y="4" width="16" height="11" rx="1"/><rect x="5.2" y="5.2" width="13.6" height="8.6" class="s"/><path d="M2 17h20l-1 2H3z"/>', browser:'<rect x="2" y="4" width="20" height="16" rx="1.5"/><rect x="2" y="7" width="20" height="13" class="s"/>',
+    desktop:'<rect x="2" y="3" width="20" height="13" rx="1"/><rect x="3.2" y="4.2" width="17.6" height="10.6" class="s"/><path d="M10 16h4v3h-4zM7 19h10v1.6H7z"/>', watch:'<rect x="8" y="2" width="8" height="4" rx="1"/><rect x="8" y="18" width="8" height="4" rx="1"/><rect x="6" y="5" width="12" height="14" rx="3.5"/><rect x="7.4" y="6.4" width="9.2" height="11.2" rx="2.5" class="s"/>'}[k] || '';
+  return `<svg viewBox="0 0 24 24" aria-hidden="true">${p}</svg>`;
 }

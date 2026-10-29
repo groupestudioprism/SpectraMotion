@@ -706,6 +706,7 @@ async function shareDlg(target){
   };
   dlg(render(), wire);
 }
+window.SWUser = () => ({uid:me?.uid || '', name:[me?.firstName, me?.lastName].filter(Boolean).join(' ') || me?.email || 'Moi'});
 window.SWShareCurrent = () => { if (!Save.pid || Save.role !== 'owner') return toastA(Save.pid ? 'Seul le propriétaire peut partager ce document.' : 'Projet non enregistré.'); const p = findP(Save.pid, false) || Save.meta; shareDlg({...p, kind:'doc'}); };
 
 /* Menus ⋮ */

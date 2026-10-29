@@ -131,6 +131,9 @@ function drawChart(ctx, L, w, h){
 /* ===== icônes ===== */
 function drawIcon(ctx, L, w, h){
   const p = iconPath(L.ic); if (!p) return;
+  if (isSticker(L.ic)){ // autocollant : forme pleine sur une grille de 100
+    ctx.save(); ctx.scale(w / 100, h / 100); ctx.fillStyle = L.col; if (L.bgc){ const g = ctx.createLinearGradient(0, 0, 100, 100); g.addColorStop(0, L.col); g.addColorStop(1, L.bgc); ctx.fillStyle = g; } ctx.fill(p); ctx.restore(); return;
+  }
   if (L.bgc){ ctx.fillStyle = L.bgc; ctx.beginPath(); if (L.bgs === 'circle') ctx.ellipse(w / 2, h / 2, w / 2, h / 2, 0, 0, Math.PI * 2); else roundRect(ctx, 0, 0, w, h, L.bgs === 'round' ? Math.min(w, h) * .22 : 0); ctx.fill(); ctx.shadowColor = 'transparent'; }
   const pad = L.bgc ? .2 : 0, s = Math.min(w, h) * (1 - pad * 2) / 24;
   ctx.save(); ctx.translate((w - 24 * s) / 2, (h - 24 * s) / 2); ctx.scale(s, s);
@@ -155,10 +158,10 @@ function simplify(pts, eps){
 
 /* ===== retouche au pixel : bichromie, retrait d'un fond uni, grain (résultats gardés en cache) ===== */
 const PIX = {cache:new Map(), grainCv:null,
-  key(L, el){ return [L.media, el.currentTime || 0, L.duo?.a, L.duo?.b, L.bgk?.c, L.bgk?.tol, L.bgk?.soft, JSON.stringify(L.crop), el.videoWidth || el.naturalWidth].join('|'); },
+  key(L, el){ return [L.media, el.currentTime || 0, L.duo?.a, L.duo?.b, L.bgk?.c, L.bgk?.tol, L.bgk?.soft, L.adj?.sharp, L.oln?.c, L.oln?.w, Math.round(L.w), JSON.stringify(L.crop), el.videoWidth || el.naturalWidth].join('|'); },
   /* image source traitée (canvas), ou l'élément d'origine si rien à faire */
   src(L, el, isVideo){
-    if (!L.duo && !L.bgk) return el;
+    if (!L.duo && !L.bgk && !L.adj?.sharp && !L.oln) return el;
     const k = this.key(L, el); if (!isVideo && this.cache.has(k)) return this.cache.get(k);
     const sw = el.videoWidth || el.naturalWidth, sh = el.videoHeight || el.naturalHeight; if (!sw || !sh) return el;
     const lim = isVideo ? 960 : 2400, f = Math.min(1, lim / Math.max(sw, sh)), W = Math.max(1, Math.round(sw * f)), H = Math.max(1, Math.round(sh * f));
@@ -172,7 +175,12 @@ const PIX = {cache:new Map(), grainCv:null,
       if (ka){ const dd = Math.hypot(p[i] - ka[0], p[i + 1] - ka[1], p[i + 2] - ka[2]); if (dd < tol) p[i + 3] = 0; else if (dd < tol + soft) p[i + 3] = Math.round(p[i + 3] * (dd - tol) / soft); }
       if (A){ const l = (p[i] * .299 + p[i + 1] * .587 + p[i + 2] * .114) / 255; p[i] = A[0] + (B[0] - A[0]) * l; p[i + 1] = A[1] + (B[1] - A[1]) * l; p[i + 2] = A[2] + (B[2] - A[2]) * l; }
     }
+    if (L.adj?.sharp) sharpenData(im, L.adj.sharp);
     g.putImageData(im, 0, 0);
+    let res = cv;
+    if (L.oln){ res = outlined(cv, L.oln.c, Math.max(1, Math.round(L.oln.w * W / Math.max(1, L.w)))); res.naturalWidth = res.width; res.naturalHeight = res.height; }
+    if (!isVideo){ this.cache.set(k, res); if (this.cache.size > 24) this.cache.delete(this.cache.keys().next().value); }
+    if (res !== cv) return res;
     if (!isVideo){ this.cache.set(k, cv); if (this.cache.size > 24) this.cache.delete(this.cache.keys().next().value); }
     cv.naturalWidth = W; cv.naturalHeight = H; // le recadrage (relatif) s'applique à la taille réelle du canvas
     return cv;

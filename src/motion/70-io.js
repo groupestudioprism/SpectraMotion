@@ -18,7 +18,7 @@ const IO = {
     const P = ED.P, timed = TIMED(ED.studio) || projEnd(P) > 0 && P.layers.some(l => l.tin.k !== 'none' || l.tout.k !== 'none' || Object.keys(l.kf || {}).length || l.t === 'video' || l.t === 'audio');
     tab = tab || (ED.studio === 'audio' ? 'audio' : TIMED(ED.studio) ? 'video' : 'image');
     const vt = recTypes(), full = this.canFull(), hasAudio = P.layers.some(l => audible(P, l));
-    const tabs = [['image', 'Image'], ['pdf', 'PDF'], ['video', 'Vidéo'], ['gif', 'GIF'], ['audio', 'Son'], ['project', 'Projet']], np = pageCount(P);
+    const tabs = [['image', 'Image'], ['pdf', 'PDF'], ['web', 'Site web'], ['video', 'Vidéo'], ['gif', 'GIF'], ['audio', 'Son'], ['project', 'Projet']], np = pageCount(P);
     const multiFmts = ['square', 'portrait', 'story', 'fbpost', 'xpost', 'pin', 'thumb', 'hd', 'a4', 'lipost'].map(id => FORMATS.find(f => f.id === id)).filter(f => f && !(f.w === P.w && f.h === P.h));
     const body = {
       image:`<p class="dlg-p">L'image affichée à la tête de lecture (${fmtT(PLAY.t)}).</p>
@@ -31,6 +31,9 @@ const IO = {
         <div class="xp-g"><label class="fd sel"><span>Qualité</span><select id="xpPdfQ"><option value="std">Standard · léger</option><option value="print"${full ? '' : ' disabled'}>Impression · haute définition${full ? '' : ' (licence)'}</option></select></label>
         <label class="fd sel"><span>Pages</span><select id="xpPdfPages"><option value="all">${np > 1 ? `Toutes (${np})` : 'Ce design'}</option>${np > 1 ? `<option value="cur">Page actuelle seulement</option>` : ''}</select></label></div>
         <p class="dlg-p small">Chaque page est une image haute qualité dans le PDF (le texte n'est pas sélectionnable).</p>`,
+      web:`<p class="dlg-p">Un site d'une page, en un seul fichier .html : ${np > 1 ? `les ${np} pages les unes sous les autres` : 'votre design'}, adapté aux téléphones, avec les liens des éléments cliquables. À publier où vous voulez (GitHub Pages, hébergeur, intranet) ou à envoyer.</p>
+        <div class="xp-g"><label class="fd sel"><span>Qualité des images</span><select id="xpWebQ"><option value="1">Standard</option><option value="2"${full ? '' : ' disabled'}>Haute définition${full ? '' : ' (licence)'}</option></select></label></div>
+        <p class="dlg-p small">${P.layers.some(l => l.href) || (P.pages || []).some(g => (g.layers || []).some(l => l.href)) ? 'Les liens sont repris.' : 'Astuce : ajoutez des liens aux boutons et textes (propriétés → Lien).'}</p>`,
       gif:`<p class="dlg-p">Une animation qui se lit partout (messageries, e-mails, sites), en boucle${timed ? `, de 0:00 à ${fmtT(Math.min(PLAY.end(), 30))}` : ''}. Sans le son.</p>
         <div class="xp-g"><label class="fd sel"><span>Largeur</span><select id="xpGifW"><option value="320">320 px</option><option value="480" selected>480 px</option><option value="720"${full ? '' : ' disabled'}>720 px${full ? '' : ' · licence'}</option></select></label>
         <label class="fd sel"><span>Images / s</span><select id="xpGifF"><option value="10">10 · plus léger</option><option value="15" selected>15</option><option value="20">20 · plus fluide</option></select></label></div>
@@ -38,6 +41,7 @@ const IO = {
       video:vt.length ? `<p class="dlg-p">L'export se fait en temps réel (${fmtT(PLAY.end())}) : gardez cet onglet ouvert et visible jusqu'à la fin.</p>
         <div class="xp-g"><label class="fd sel"><span>Format</span><select id="xpVidFmt">${(() => { const first = vt.findIndex(([e]) => full || e !== 'mp4'); return vt.map(([e, t, n], i) => `<option value="${i}"${e === 'mp4' && !full ? ' disabled' : ''}${i === first ? ' selected' : ''}>${n}${e === 'mp4' && !full ? ' · licence' : ''}</option>`).join(''); })()}</select></label>
         <label class="fd sel"><span>Définition</span><select id="xpVidRes">${[[480, '480p'], [720, '720p'], [1080, '1080p'], [2160, '4K']].filter(([r]) => r <= Math.max(P.w, P.h) * 1.01 || r === 480).map(([r, n]) => `<option value="${r}"${r === 720 ? ' selected' : ''}${r > 720 && !full ? ' disabled' : ''}>${n}${r > 720 && !full ? ' · licence' : ''}</option>`).join('')}</select></label></div>
+        ${!TIMED(ED.studio) && np > 1 ? `<label class="ap-check"><input type="checkbox" id="xpSlides" checked><span>Diaporama des ${np} pages, en fondu</span></label><div class="xp-g"><label class="fd sel"><span>Durée par page</span><select id="xpSlideD">${[2, 3, 4, 5, 6, 8, 10].map(v => `<option value="${v}"${v === 4 ? ' selected' : ''}>${v} s</option>`).join('')}</select></label></div>` : ''}
         <p class="dlg-p small">${hasAudio ? 'Le son de toutes les pistes est mixé dans la vidéo.' : 'Le projet ne contient pas de son.'} Sans licence : 720p et WebM.</p>`
         : `<p class="dlg-p">Ce navigateur ne sait pas enregistrer de vidéo (MediaRecorder absent). Utilisez Chrome, Edge ou Firefox récent sur ordinateur.</p>`,
       audio:hasAudio ? `<p class="dlg-p">Le mixage de toutes les pistes son (volumes, fondus, vitesses), de 0:00 à ${fmtT(PLAY.end())}.</p><div class="xp-g"><label class="fd sel"><span>Format</span><select id="xpAudFmt"><option value="wav">WAV 16 bits · 48 kHz stéréo</option></select></label></div>`
@@ -68,8 +72,9 @@ const IO = {
         if (set === 'cur') await this.image(...a);
         else await this.imageSet(set, ...a, [...d.querySelectorAll('[data-xpf]:checked')].map(x => FORMATS.find(f => f.id === x.dataset.xpf)), (f, t) => this.prog(d, f, t)); }
       if (tab === 'pdf') await this.pdf(d.querySelector('#xpPdfQ').value, d.querySelector('#xpPdfPages').value, (f, t) => this.prog(d, f, t));
+      if (tab === 'web') await this.web(+d.querySelector('#xpWebQ').value, (f, t) => this.prog(d, f, t));
       if (tab === 'gif') await this.gif(+d.querySelector('#xpGifW').value, +d.querySelector('#xpGifF').value, (f, t) => this.prog(d, f, t));
-      if (tab === 'video') await this.video(recTypes()[+d.querySelector('#xpVidFmt').value], +d.querySelector('#xpVidRes').value, (f, t) => this.prog(d, f, t));
+      if (tab === 'video') await this.video(recTypes()[+d.querySelector('#xpVidFmt').value], +d.querySelector('#xpVidRes').value, (f, t) => this.prog(d, f, t), d.querySelector('#xpSlides')?.checked ? this.slideshow(+d.querySelector('#xpSlideD').value || 4) : null);
       if (tab === 'audio') await this.wav((f, t) => this.prog(d, f, t));
       if (tab === 'project') await this.project(d.querySelector('[name=xpProj]:checked').value, (f, t) => this.prog(d, f, t));
       if (!this.cancel){ window.SWDlg.close(); toast('Export terminé : le fichier est téléchargé'); }
@@ -105,9 +110,34 @@ const IO = {
     for (const [k, i] of idx.entries()){
       if (this.cancel) return; prog(k / idx.length * .9, `Page ${k + 1} / ${idx.length}…`);
       const cv = await this.canvasOf(pageView(P, i), sc, 'jpeg', false, 0), b = await new Promise(r => cv.toBlob(r, 'image/jpeg', q === 'print' ? .95 : .86));
-      if (!b) throw new Error('Page trop grande pour ce navigateur.'); pages.push({jpg:new Uint8Array(await b.arrayBuffer()), pw:cv.width, ph:cv.height});
+      if (!b) throw new Error('Page trop grande pour ce navigateur.'); pages.push({jpg:new Uint8Array(await b.arrayBuffer()), pw:cv.width, ph:cv.height, links:pageLinks(pageView(P, i))});
     }
     prog(.95, 'Assemblage du PDF…'); await this.save(`${this.fileBase()}.pdf`, pdfOf(pages, sz.w, sz.h, P.title));
+  },
+  /* site web : un fichier HTML autonome (images des pages + zones de liens) */
+  async web(q, prog){
+    const P = ED.P, n = pageCount(P), sc = Math.min(q, 4000 / Math.max(P.w, P.h)), secs = [];
+    for (let i = 0; i < n; i++){
+      if (this.cancel) return; prog(i / n * .9, `Page ${i + 1} / ${n}…`); const V = pageView(P, i), cv = await this.canvasOf(V, sc, 'jpeg', false, 0);
+      const url = cv.toDataURL('image/jpeg', .88), links = pageLinks(V).map(l => `<a href="${escH(l.href)}" style="left:${(l.x * 100).toFixed(3)}%;top:${(l.y * 100).toFixed(3)}%;width:${(l.w * 100).toFixed(3)}%;height:${(l.h * 100).toFixed(3)}%"${/^https?:/.test(l.href) ? ' target="_blank" rel="noopener"' : ''} aria-label="${escH(l.href)}"></a>`).join('');
+      const alt = V.layers.filter(l => l.t === 'text').map(l => l.txt).join(' · ').slice(0, 300);
+      secs.push(`<section><img src="${url}" alt="${escH(alt)}" width="${P.w}" height="${P.h}">${links}</section>`);
+    }
+    const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escH(P.title)}</title><meta name="generator" content="Spectra Motion · Studio Prism">
+<style>html,body{margin:0;background:${hexOk(P.bg) ? P.bg : '#FFFFFF'}}main{max-width:${Math.max(P.w, 600)}px;margin:0 auto}section{position:relative;line-height:0}section img{width:100%;height:auto;display:block}section a{position:absolute;display:block;border-radius:6px}section a:focus-visible{outline:3px solid #7B2FF7;outline-offset:2px}section a:hover{background:rgb(255 255 255 / .08)}</style></head>
+<body><main>${secs.join('\n')}</main></body></html>`;
+    prog(.95, 'Assemblage…'); await this.save(`${this.fileBase()}.html`, new Blob([html], {type:'text/html'}));
+  },
+  /* diaporama : les pages enchaînées en vidéo, avec un fondu */
+  slideshow(d = 4){
+    const P = ED.P, n = pageCount(P), V = newProject('video', {id:'', w:P.w, h:P.h}); V.media = P.media; V.title = P.title; V.layers = []; let tr = 0;
+    for (let i = 0; i < n; i++){
+      const g = pageView(P, i), st = i * d, maxT = Math.max(0, ...g.layers.map(l => l.track)) + 1;
+      if (g.bg) V.layers.push(mkColor(V, g.bg, {start:st, dur:d, track:tr, tin:{k:i ? 'fade' : 'none', d:.5}}));
+      for (const L of g.layers){ const c = deep(L); c.id = uid('l'); c.start = st; c.dur = d; c.track = tr + 1 + L.track; if (i && c.tin.k === 'none') c.tin = {k:'fade', d:.5}; V.layers.push(c); }
+      tr += maxT + 1;
+    }
+    V.dur = n * d; return V;
   },
   async gif(width, fps, prog){
     const P = ED.P, timed = TIMED(P.studio) || P.layers.some(l => l.tin.k !== 'none' || l.tout.k !== 'none' || Object.keys(l.kf || {}).length || l.t === 'video');
@@ -125,10 +155,10 @@ const IO = {
     PLAY.still();
   },
   /* vidéo : rendu image par image dans un canvas enregistré en direct, son mixé par le moteur audio */
-  async video(type, res, prog){
-    const P = ED.P; if (!type) throw new Error('Format vidéo indisponible.');
+  async video(type, res, prog, P0){
+    const P = P0 || ED.P; if (!type) throw new Error('Format vidéo indisponible.');
     if (document.visibilityState !== 'visible') throw new Error('Gardez l\'onglet visible pendant l\'export.');
-    const k = Math.min(1, res / Math.min(P.w, P.h)) || 1, W = Math.round(P.w * k / 2) * 2, H = Math.round(P.h * k / 2) * 2, sc = W / P.w, end = PLAY.end();
+    const k = Math.min(1, res / Math.min(P.w, P.h)) || 1, W = Math.round(P.w * k / 2) * 2, H = Math.round(P.h * k / 2) * 2, sc = W / P.w, end = P0 ? P0.dur : PLAY.end();
     prog(0, 'Préparation des médias…');
     await MEDIA.loadAll(P);
     const needBuf = P.layers.filter(l => audible(P, l)); await Promise.all(needBuf.map(l => MEDIA.buffer(P.media[l.media])));
@@ -256,26 +286,30 @@ function pdfSize(P){
   return {w, h, label:f ? `${mm(w)} × ${mm(h)} mm` : `${Math.round(w)} × ${Math.round(h)} points (${P.w} × ${P.h} px)`};
 }
 function pdfOf(pages, W, H, title = ''){
-  const enc = new TextEncoder(), parts = [], offs = []; let len = 0;
+  const enc = new TextEncoder(), parts = [], offs = []; let len = 0, next = 4;
   const add = x => { const b = typeof x === 'string' ? enc.encode(x) : x; parts.push(b); len += b.length; };
   const obj = (n, body) => { offs[n] = len; add(`${n} 0 obj\n`); body(); add('\nendobj\n'); };
   const esc = t => String(t).replace(/[\\()]/g, '\\$&').replace(/[^\x20-\x7E]/g, '');
   add('%PDF-1.4\n'); add(new Uint8Array([0x25, 0xE2, 0xE3, 0xCF, 0xD3, 0x0A]));
-  const n = pages.length, pageIds = pages.map((_, i) => 4 + i * 3);
+  // numérotation : page, image, contenu, puis une annotation par lien
+  const plan = pages.map(pg => { const o = {page:next, img:next + 1, cs:next + 2, ann:[]}; next += 3; (pg.links || []).forEach(() => o.ann.push(next++)); return o; });
   obj(1, () => add('<< /Type /Catalog /Pages 2 0 R >>'));
-  obj(2, () => add(`<< /Type /Pages /Kids [${pageIds.map(i => i + ' 0 R').join(' ')}] /Count ${n} >>`));
+  obj(2, () => add(`<< /Type /Pages /Kids [${plan.map(o => o.page + ' 0 R').join(' ')}] /Count ${pages.length} >>`));
   obj(3, () => add(`<< /Producer (Spectra Motion - Studio Prism) /Title (${esc(title)}) >>`));
   pages.forEach((pg, i) => {
-    const id = pageIds[i], w = W.toFixed(2), h = H.toFixed(2), cs = `q ${w} 0 0 ${h} 0 0 cm /Im0 Do Q`;
-    obj(id, () => add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${w} ${h}] /Resources << /XObject << /Im0 ${id + 1} 0 R >> >> /Contents ${id + 2} 0 R >>`));
-    obj(id + 1, () => { add(`<< /Type /XObject /Subtype /Image /Width ${pg.pw} /Height ${pg.ph} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${pg.jpg.length} >>\nstream\n`); add(pg.jpg); add('\nendstream'); });
-    obj(id + 2, () => add(`<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`));
+    const o = plan[i], w = W.toFixed(2), h = H.toFixed(2), cs = `q ${w} 0 0 ${h} 0 0 cm /Im0 Do Q`;
+    obj(o.page, () => add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${w} ${h}] /Resources << /XObject << /Im0 ${o.img} 0 R >> >> /Contents ${o.cs} 0 R${o.ann.length ? ` /Annots [${o.ann.map(n => n + ' 0 R').join(' ')}]` : ''} >>`));
+    obj(o.img, () => { add(`<< /Type /XObject /Subtype /Image /Width ${pg.pw} /Height ${pg.ph} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${pg.jpg.length} >>\nstream\n`); add(pg.jpg); add('\nendstream'); });
+    obj(o.cs, () => add(`<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`));
+    (pg.links || []).forEach((l, k) => obj(o.ann[k], () => add(`<< /Type /Annot /Subtype /Link /Rect [${(l.x * W).toFixed(2)} ${((1 - l.y - l.h) * H).toFixed(2)} ${((l.x + l.w) * W).toFixed(2)} ${((1 - l.y) * H).toFixed(2)}] /Border [0 0 0] /A << /S /URI /URI (${esc(l.href)}) >> >>`)));
   });
-  const total = 4 + n * 3, xref = len;
-  add(`xref\n0 ${total}\n0000000000 65535 f \n`); for (let i = 1; i < total; i++) add(String(offs[i]).padStart(10, '0') + ' 00000 n \n');
-  add(`trailer\n<< /Size ${total} /Root 1 0 R /Info 3 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+  const xref = len;
+  add(`xref\n0 ${next}\n0000000000 65535 f \n`); for (let i = 1; i < next; i++) add(String(offs[i]).padStart(10, '0') + ' 00000 n \n');
+  add(`trailer\n<< /Size ${next} /Root 1 0 R /Info 3 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
   return new Blob(parts, {type:'application/pdf'});
 }
+/* liens d'une page, en fractions de la page */
+const pageLinks = V => V.layers.filter(l => l.href && l.vis !== false).map(l => ({x:l.x / V.w, y:l.y / V.h, w:l.w / V.w, h:l.h / V.h, href:l.href}));
 /* ---------- GIF animé : palette commune (coupe médiane), compression LZW ---------- */
 async function gifEncode(frames, W, H, delayCs, prog = () => {}, cancelled = () => false){
   // 1. palette : échantillon de pixels de toutes les images, coupe médiane en 256 boîtes

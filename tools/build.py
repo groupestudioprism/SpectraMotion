@@ -57,7 +57,7 @@ def assemble():
     body = rd('parts/body.html').replace('<!--SYMBOL-->', symbol(), 1).replace('<!--SPMARK-->', mark, 1).replace('<!--SPWORD-->', word, 1)
     return (rd('parts/head.html') + '<style>\n' + ''.join(rd('css/' + c) for c in CSS_ORDER) + '</style>\n</head><body>\n' + body
             + "<script>\n(() => {\n'use strict';\n" + editor + '/*DEMO-HOOK*/\n})();\n</script>\n'
-            + '<script>\n' + rd('js/auth.js') + rd('js/cloud.js') + rd('js/auth-end.js') + '</script>\n')
+            + '<script>\n' + rd('js/auth.js') + rd('js/cloud.js') + rd('js/ai.js') + rd('js/auth-end.js') + '</script>\n')
 def head(desc):
     return ('<!doctype html><html lang="fr"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
@@ -75,7 +75,7 @@ def main(argv):
     desc = 'Spectra Motion · Studio Prism : création photo, vidéo, animation et audio dans un seul studio.'
     (ROOT / 'dist').mkdir(exist_ok=True)
     # démo : expose l'état de l'atelier aux tests automatiques (jamais dans la version en ligne)
-    demo_body = body.replace('/*DEMO-HOOK*/', 'window.__SM = {ED, PLAY, MEDIA, TL, STAGE, IO, PANEL, INSP, HIST, PAGES, PIX, cleanProject, renderFrame, tplProject, SM_TPL, layerState, measureText, IDB, qrMatrix, docColors, recolor, pageCount, FORMATS, FONTS_M, ICON_SET, gifEncode, pdfOf};', 1)
+    demo_body = body.replace('/*DEMO-HOOK*/', 'window.__SM = {ED, PLAY, MEDIA, TL, STAGE, IO, PANEL, INSP, HIST, PAGES, PIX, cleanProject, renderFrame, tplProject, SM_TPL, layerState, measureText, IDB, qrMatrix, docColors, recolor, pageCount, FORMATS, FONTS_M, ICON_SET, gifEncode, pdfOf, AI, SEG, STOCK, PRESENT, COMMENTS, VERSIONS, VTOOLS, synthSound, findReplace, STICKER_SET, mkTable, mkMock};', 1)
     demo = head(desc).replace('<link rel="preload"', '<link rel="x-preload"') + demo_body.replace('<title>Spectra Motion</title>', '<title>Spectra Motion · démo</title>', 1) + '</body></html>\n'
     (ROOT / 'dist' / 'spectramotion-demo.html').write_text(demo.replace('href="assets/', 'href="../assets/').replace('href="manifest.webmanifest"', 'href="../manifest.webmanifest"'), encoding='utf-8')
     live = head(desc) + body.replace('/*DEMO-HOOK*/', '', 1).replace('const FIREBASE_CONFIG = null;', CONFIG).replace('<title>Spectra Motion</title>', '<title>Spectra Motion · Studio Prism</title>', 1) + '</body></html>\n'

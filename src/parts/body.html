@@ -119,6 +119,7 @@
     <nav class="st-nav" id="studioNav" role="tablist" aria-label="Studios"></nav>
     <span class="ed-sp"></span>
     <div class="ed-hist"><button type="button" class="ib" id="undoBtn" aria-label="Annuler"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button><button type="button" class="ib" id="redoBtn" aria-label="Rétablir"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button></div>
+    <button type="button" class="btn-ghost" id="presentBtn" title="Présenter (plein écran)"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M12 16v4M8 20h8M10 8.5v4l3.5-2z"/></svg><span class="hide-s">Présenter</span></button>
     <button type="button" class="btn-ghost" id="shareBtn"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/></svg><span class="hide-s">Partager</span></button>
     <button type="button" class="btn-prism" id="exportBtn"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span class="hide-s">Exporter</span></button>
     <button type="button" id="licBadge" hidden title="Offre gratuite">Gratuit</button>
@@ -128,7 +129,7 @@
     <nav class="sm-rail" id="smRail" aria-label="Ressources"></nav>
     <aside class="sm-panel" id="smPanel" aria-labelledby="smPanelTitle"><header><b id="smPanelTitle"></b><button type="button" class="ib" id="smPanelClose" aria-label="Fermer le panneau"><svg viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></svg></button></header><div class="sm-pbody" id="smPanelBody"></div></aside>
     <main class="sm-stage" id="smStage" aria-label="Scène">
-      <div class="stg-wrap" id="stgWrap"><canvas id="stgCanvas"></canvas><div class="stg-ovl" id="stgOvl"></div></div>
+      <div class="stg-wrap" id="stgWrap"><canvas id="stgCanvas"></canvas><div class="stg-ovl" id="stgOvl"></div><div class="stg-pins" id="stgPins"></div></div>
       <nav class="sm-pages" id="smPages" aria-label="Pages" hidden></nav>
       <div class="stg-tools" role="toolbar" aria-label="Affichage">
         <button type="button" id="stgPlay" class="ib" hidden aria-label="Lecture"></button><span id="stgTime" class="stg-t" hidden></span>

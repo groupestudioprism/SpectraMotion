@@ -1,7 +1,7 @@
 /* Spectra Motion · service worker : l'app s'installe et se rouvre même avec une connexion instable.
    Pages : réseau d'abord (toujours la dernière version), copie de secours hors ligne. Polices et bibliothèques : copie locale.
    Jamais de cache pour Firebase (comptes, projets, médias du cloud). */
-const CACHE = 'spectra-motion-v2';
+const CACHE = 'spectra-motion-v3';
 const CORE = ['./', './index.html', './manifest.webmanifest', './assets/branding/spectra-motion-favicon.svg', './assets/branding/spectra-motion-192.png', './assets/branding/spectra-motion-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });

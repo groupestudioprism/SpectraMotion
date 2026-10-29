@@ -352,9 +352,36 @@ function tplProject(t){
     const pgs = t.buildPages(P); P.layers = fix(pgs[0].layers); P.bg = pgs[0].bg;
     if (pgs.length > 1){ P.pages = pgs.map((g, i) => i ? {id:uid('pg'), bg:g.bg, layers:fix(g.layers)} : {id:uid('pg'), live:true}); P.pg = 0; }
   } else P.layers = fix(t.build(P));
+  if (t.post) t.post(P);
   if (TIMED(P.studio)) syncDur(P);
   return P;
 }
+/* contraste : un texte posé directement sur le fond garde un contraste lisible (au moins 3:1), sinon il passe en noir ou blanc */
+const lumOf = c => { const v = [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16) / 255).map(x => x <= .03928 ? x / 12.92 : ((x + .055) / 1.055) ** 2.4); return .2126 * v[0] + .7152 * v[1] + .0722 * v[2]; };
+const contrastOf = (a, b) => { const x = lumOf(a), y = lumOf(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+function ensureContrast(V){
+  const bgAt = L => { const under = V.layers.filter(o => o !== L && o.track < L.track && (o.t === 'shape' || o.t === 'color') && o.fill && !o.slot && o.x <= L.x + 2 && o.y <= L.y + 2 && o.x + o.w >= L.x + L.w - 2 && o.y + o.h >= L.y + L.h - 2).sort((a, b) => b.track - a.track)[0];
+    return under ? under.fill : hexOk(V.bg) ? V.bg : '#FFFFFF'; };
+  for (const L of V.layers) if (L.t === 'text' && hexOk(L.col) && !L.tbg){ const bg = bgAt(L); if (hexOk(bg) && contrastOf(L.col.slice(0, 7), bg.slice(0, 7)) < 3) L.col = contrastOf('#FFFFFF', bg.slice(0, 7)) > contrastOf('#16131F', bg.slice(0, 7)) ? '#FFFFFF' : '#16131F'; }
+}
+/* variantes : chaque modèle décliné avec d'autres palettes et d'autres associations de polices */
+(() => {
+  const PALS = [['Océan', ['#0B2A4A', '#145A86', '#14C2EC', '#A8E6F0', '#F4FBFC']], ['Forêt', ['#1F3B2D', '#2F6B4F', '#7FB069', '#E6E1C5', '#F4EFE6']], ['Coucher de soleil', ['#3D1A5B', '#B23A7A', '#FF6F59', '#FFB347', '#FFE5B4']],
+    ['Terracotta', ['#5C2E1F', '#B5523B', '#E08E6D', '#F2D0A9', '#FAF3E8']], ['Nuit', ['#0E0B16', '#231942', '#5E548E', '#9F86C0', '#E0B1CB']], ['Bonbon', ['#5A6BFF', '#FF5DA2', '#FFA1C9', '#9AD0FF', '#FFF4FA']],
+    ['Corporate', ['#0A2540', '#1D4ED8', '#60A5FA', '#E5E7EB', '#FFFFFF']], ['Agrumes', ['#1B1B1E', '#FF7A00', '#FFC300', '#C7EA46', '#FFFBEA']], ['Royal', ['#1B1464', '#4B2C82', '#C9A227', '#F5E6A8', '#FFFFFF']],
+    ['Menthe', ['#0F4C45', '#1F8A70', '#5DD39E', '#BCE7C9', '#F2FBF6']], ['Bord de mer', ['#264653', '#2A9D8F', '#E9C46A', '#F4A261', '#E76F51']], ['Monochrome', ['#111111', '#444444', '#888888', '#CCCCCC', '#F5F5F5']]];
+  const FP = [['Bricolage Grotesque', 'Inter'], ['Playfair Display', 'Lora'], ['Anton', 'Montserrat'], ['Fraunces', 'DM Sans'], ['Cinzel', 'Cormorant Garamond'], ['Fredoka', 'Nunito'], ['Space Grotesk', 'Work Sans'], ['Bebas Neue', 'Outfit'], ['Unbounded', 'Manrope'], ['Abril Fatface', 'Raleway'], ['Righteous', 'Josefin Sans'], ['Archivo Black', 'Archivo']];
+  const base = [...SM_TPL];
+  base.forEach((t, i) => { for (let k = 0; k < 6; k++){
+    const [pn, pal] = PALS[(i * 5 + k * 7) % PALS.length], [ft, fb] = FP[(i * 3 + k * 5) % FP.length];
+    SM_TPL.push({...t, id:`${t.id}~${k}`, name:`${t.name} · ${pn}`, variant:t.id, desc:`${t.desc} — palette ${pn}, polices ${ft} et ${fb}`, post(P){
+      recolor(P, pal);
+      for (const L of allLayers(P)){ if (L.t !== 'text') continue; if (FONT_PAIRS.some(f => f.t === L.font) || /Script|Vibes|Pacifico|Caveat|Sacramento/.test(L.font)) continue; L.font = L.fw >= 700 && L.fs >= Math.min(P.w, P.h) * .05 ? ft : fb; }
+      ensureContrast(P); for (let j = 0; j < pageCount(P); j++){ if (j !== (P.pg || 0)){ const g = P.pages[j]; ensureContrast({...P, layers:g.layers, bg:g.bg}); } }
+      for (const L of allLayers(P)) if (L.t === 'text') L.h = Math.max(measureText(L).h, 4);
+    }});
+  } });
+})();
 const TPL_THUMBS = {};
 function tplThumb(t){
   if (TPL_THUMBS[t.id]) return TPL_THUMBS[t.id];

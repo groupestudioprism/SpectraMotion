@@ -41,7 +41,7 @@ const STAGE = {
     if (this.pq){ cancelAnimationFrame(this.pq); this.pq = 0; }
     if (!this.ctx || !this.P) return;
     try { renderFrame(this.ctx, this.P, PLAY.t, {scale:this.rs, noFx:this.still()}); } catch(e){ console.error('[Spectra Motion] rendu', e); }
-    this.overlay(); BUS.emit('painted');
+    this.overlay(); COMMENTS.pins(); BUS.emit('painted');
   },
   /* Design et Photo montrent le visuel « posé » (effets d'entrée terminés), sauf pendant l'aperçu de l'animation */
   still(){ return !TIMED(this.P.studio) && !PLAY.playing; },
@@ -80,6 +80,8 @@ const STAGE = {
     if (e.button !== 0 || this.editing) return;
     if (e.target.closest('.stg-tools,.stg-hint')) return;
     const p = this.toP(e), hd = e.target.closest('[data-h]');
+    if (COMMENTS.placing && e.button === 0){ e.preventDefault(); COMMENTS.placing = false; $('#app').classList.remove('commenting'); window.SWAsk ? window.SWAsk('Commentaire', 'Votre remarque', '', 'Publier', v => { if (String(v || '').trim()) COMMENTS.add(p.x, p.y, v.trim()); PANEL.render(); }) : COMMENTS.add(p.x, p.y, 'Commentaire'); PANEL.render(); return; }
+    if (e.target.closest('[data-cpin]')){ PANEL.show('comments'); return; }
     if (ED.tool === 'draw' && !ED.readOnly){ e.preventDefault(); if (PLAY.playing) PLAY.pause(); this.drag = {mode:'draw', pts:[[p.x, p.y]]}; this.host.setPointerCapture?.(e.pointerId); return; }
     if (hd && !ED.readOnly && hd.dataset.h[0] === 'm' && hd.dataset.h.length === 3){ e.preventDefault(); this.startMulti(hd.dataset.h.slice(1), p); return; }
     if (hd && !ED.readOnly){ const L = ED.sel1(); if (!L) return; e.preventDefault(); this.host.setPointerCapture?.(e.pointerId); this.startXform(L, hd.dataset.h, p, e); return; }

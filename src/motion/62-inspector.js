@@ -38,6 +38,9 @@ const INSP = {
         ${TIMED(ED.studio) || ED.studio === 'design' ? `<div class="fd2">${field('Images / s', '@fps', P.fps, {type:'select', opts:{24:'24', 25:'25', 30:'30', 50:'50', 60:'60'}})}${field('Durée', '@dur', round(TIMED(ED.studio) ? PLAY.end() : P.dur, 2), {unit:'s', min:.1, step:.1, dec:2})}</div>` : ''}
         ${field('Fond', '@bg', P.bg || '#ffffff', {type:'color', clear:true})}
         ${P.bg ? '' : '<p class="is-note">Fond transparent : visible en export PNG.</p>'}`)
+      + (TIMED(ED.studio) ? '' : this.sec('Présentation', `${field(pageCount(P) > 1 ? `Notes de la page ${(P.pg || 0) + 1}` : 'Notes', '@notes', P.notes || '', {type:'textarea'})}
+        <div class="fd2">${field('Transition', '@ptr', P.ptr || 'fade', {type:'select', opts:PAGE_TR})}${field('Lecture auto', '@pdur', P.pdur || 6, {unit:'s / page', min:1, max:120, dec:0})}</div>
+        <button type="button" class="pn-big alt" data-ia="present">${ico('present')} Présenter</button>`, pageCount(P) > 1))
       + `<p class="is-note">${TIMED(ED.studio) ? 'Astuce : glissez des médias sur la scène ou dans la timeline. Espace = lecture, S = couper, Suppr = supprimer.' : 'Astuce : double-cliquez sur un texte pour l\'écrire. Maj + clic pour sélectionner plusieurs calques.'}</p>`;
   },
   multi(sel){
@@ -81,7 +84,20 @@ const INSP = {
       ${L.t === 'shape' && LINE_KINDS.has(L.k) ? `<div class="fd2">${field('Type', 'k', L.k, {type:'select', opts:{line:'Ligne', larrow:'Flèche', ldarrow:'Double flèche'}})}${field('Trait', 'dash', L.dash || 'none', {type:'select', opts:DASHES})}</div><p class="is-note">Épaisseur : la moitié de la hauteur du cadre.</p>` : ''}
       ${L.pat ? `<div class="fd2">${field('Motif', 'pat', L.pat, {type:'select', opts:{none:'Aucun', ...PATTERNS}})}${field('Couleur du motif', 'patc', L.patc || '#7B2FF7', {type:'color'})}</div>${field('Taille du motif', 'pats', L.pats || 40, {type:'range', min:6, max:300, step:1, fmt:v => Math.round(v) + ' px'})}` : ''}
       ${L.slot ? '<p class="is-note">Cadre photo : glissez une image dessus, ou sélectionnez-le puis cliquez sur une image dans Médias.</p>' : ''}`);
-    if (L.t === 'icon') h += this.sec('Icône', `<div class="fd2">${field('Couleur', 'col', L.col, {type:'color'})}${field('Trait', 'sw', L.sw || 2, {type:'range', min:.5, max:4, step:.1, fmt:v => round(v, 1)})}</div>
+    if (L.t === 'icon' && isSticker(L.ic)) h += this.sec('Autocollant', `<div class="fd2">${field('Couleur', 'col', L.col, {type:'color'})}${field('Dégradé vers', 'bgc', L.bgc || '#FF3F86', {type:'color', clear:true})}</div>
+      ${field('Forme', 'ic', L.ic, {type:'select', opts:Object.fromEntries(STICKER_SET.map(x => [x[0], x[2] + ' · ' + x[1]]))})}`);
+    if (L.t === 'table') h += this.sec('Tableau', `${field('Contenu (une ligne par rangée, « ; » entre les colonnes)', '@tableRows', tableText(L), {type:'textarea'})}
+      <div class="fd2">${fontSelect(L.font)}${field('Taille du texte', 'fs', L.fs, {unit:'px', min:4, max:400, dec:0})}</div>
+      <div class="fd2">${field('Texte', 'col', L.col, {type:'color'})}${field('Alignement', 'align', L.align || 'l', {type:'select', opts:{l:'Gauche', c:'Centre', r:'Droite'}})}</div>
+      ${field('Ligne d\'en-tête', 'hdr', L.hdr, {type:'check'})}
+      <div class="fd2">${field('Fond de l\'en-tête', 'hbg', L.hbg || '#16131F', {type:'color', clear:true})}${field('Texte de l\'en-tête', 'hcol', L.hcol || '#FFFFFF', {type:'color'})}</div>
+      <div class="fd2">${field('Fond des cellules', 'bg', L.bg || '#FFFFFF', {type:'color', clear:true})}${field('Une ligne sur deux', 'alt', L.alt || '#F3F1FA', {type:'color', clear:true})}</div>
+      <div class="fd2">${field('Bordures', 'bc', L.bc || '#D9D5E6', {type:'color', clear:true})}${field('Épaisseur', 'bw', L.bw ?? 1, {unit:'px', min:0, max:20, dec:0})}</div>
+      <p class="is-note">Les nombres s'alignent à droite automatiquement. Collez directement des cellules copiées depuis un tableur.</p>`);
+    if (L.t === 'mock') h += this.sec('Maquette', `<div class="fd2">${field('Appareil', 'dev', L.dev, {type:'select', opts:MOCKS})}${field('Couleur', 'fc', L.fc, {type:'color'})}</div>
+      ${field('Image dans l\'écran', 'fit', L.fit || 'cover', {type:'select', opts:{cover:'Remplir l\'écran', contain:'Entière'}})}
+      <p class="is-note">${L.media ? escH(P.media[L.media]?.name || '') + ' · glissez une autre image pour la remplacer.' : 'Glissez une image sur l\'écran, ou sélectionnez la maquette puis cliquez sur une image dans Médias.'}</p>${L.media ? '<button type="button" class="pn-btn" data-ia="mockClear">Vider l\'écran</button>' : ''}`);
+    if (L.t === 'icon' && !isSticker(L.ic)) h += this.sec('Icône', `<div class="fd2">${field('Couleur', 'col', L.col, {type:'color'})}${field('Trait', 'sw', L.sw || 2, {type:'range', min:.5, max:4, step:.1, fmt:v => round(v, 1)})}</div>
       <div class="fd2">${field('Fond', 'bgc', L.bgc || '#FFC83D', {type:'color', clear:true})}${field('Forme du fond', 'bgs', L.bgs || 'circle', {type:'select', opts:{circle:'Rond', round:'Arrondi', square:'Carré'}})}</div>
       ${field('Icône', 'ic', L.ic, {type:'select', opts:Object.fromEntries(ICON_SET.map(x => [x[0], x[2] + ' · ' + x[1]]))})}`);
     if (L.t === 'chart') h += this.sec('Graphique', `${field('Type', 'ck', L.ck, {type:'select', opts:CHART_KINDS})}
@@ -106,6 +122,9 @@ const INSP = {
         <div class="is-acts"><button type="button" data-ia="flipX">${ico('flipH')} Miroir</button><button type="button" data-ia="flipY">${ico('flipV')} Retourner</button><button type="button" data-ia="adjust">${ico('adjust')} Réglages</button></div>
         ${L.t === 'video' ? `<div class="fd2">${field('Vitesse', 'speed', L.speed || 1, {type:'select', opts:{.25:'× 0,25', .5:'× 0,5', .75:'× 0,75', 1:'× 1', 1.25:'× 1,25', 1.5:'× 1,5', 2:'× 2', 4:'× 4'}})}${field('Début dans la source', 'in', L.in || 0, {unit:'s', min:0, step:.1, dec:2})}</div>
           ${m?.hasAudio ? field('Volume', 'vol', L.vol ?? 1, {type:'range', min:0, max:2, step:.01, fmt:v => Math.round(v * 100) + ' %'}) + `<div class="fd2">${field('Fondu entrée', 'fadeIn', L.fadeIn || 0, {unit:'s', min:0, step:.1, dec:2})}${field('Fondu sortie', 'fadeOut', L.fadeOut || 0, {unit:'s', min:0, step:.1, dec:2})}</div>` + field('Couper le son', 'mute', L.mute, {type:'check'}) : '<p class="is-note">Cette vidéo n\'a pas de son.</p>'}` : ''}
+        ${L.t === 'video' && timed ? `<div class="is-acts">${m?.hasAudio ? `<button type="button" data-ia="detach">${ico('audio')} Détacher l'audio</button>` : ''}<button type="button" data-ia="xfade">${ico('trans')} Fondu enchaîné</button><button type="button" data-ia="freeze">${ico('photo')} Arrêt sur image</button>${m?.hasAudio ? `<button type="button" data-ia="captions">${ico('magic')} Sous-titres IA</button>` : ''}</div>` : ''}
+        ${L.t === 'image' && timed ? `<div class="is-acts"><button type="button" data-ia="xfade">${ico('trans')} Fondu enchaîné avec le clip précédent</button></div>` : ''}
+        ${m?.credit ? `<p class="is-note">© ${escH(m.credit.by)} · ${escH(m.credit.lic)}${m.credit.src ? ` · <a href="${escH(m.credit.src)}" target="_blank" rel="noopener">source</a>` : ''}</p>` : ''}
         <p class="is-note">${escH(m?.name || '')}${m?.w ? ` · ${m.w} × ${m.h}` : ''}${m?.dur ? ' · ' + fmtT(m.dur) : ''}</p>`);
     }
     if (L.t === 'audio'){
@@ -116,7 +135,7 @@ const INSP = {
         <div class="fd2">${field('Vitesse', 'speed', L.speed || 1, {type:'select', opts:{.5:'× 0,5', .75:'× 0,75', 1:'× 1', 1.25:'× 1,25', 1.5:'× 1,5', 2:'× 2'}})}${field('Début dans la source', 'in', L.in || 0, {unit:'s', min:0, step:.1, dec:2})}</div>
         <div class="fd2">${field('Graves', 'eqLo', L.eqLo || 0, {type:'range', min:-15, max:15, step:1, fmt:v => (v > 0 ? '+' : '') + Math.round(v) + ' dB'})}${field('Aigus', 'eqHi', L.eqHi || 0, {type:'range', min:-15, max:15, step:1, fmt:v => (v > 0 ? '+' : '') + Math.round(v) + ' dB'})}</div>
         ${field('Panoramique', 'pan', L.pan || 0, {type:'range', min:-1, max:1, step:.05, fmt:v => Math.abs(v) < .01 ? 'centre' : (v < 0 ? 'gauche ' : 'droite ') + Math.round(Math.abs(v) * 100) + ' %'})}
-        ${field('Couper le son', 'mute', L.mute, {type:'check'})}<p class="is-note">${escH(m?.name || '')}${m?.dur ? ' · ' + fmtT(m.dur) : ''}</p>`);
+        ${field('Couper le son', 'mute', L.mute, {type:'check'})}<div class="is-acts"><button type="button" data-ia="captions">${ico('magic')} Sous-titres IA</button></div>${m?.credit ? `<p class="is-note">© ${escH(m.credit.by)} · ${escH(m.credit.lic)}</p>` : ''}<p class="is-note">${escH(m?.name || '')}${m?.dur ? ' · ' + fmtT(m.dur) : ''}</p>`);
     }
     if (L.t !== 'audio'){
       h += this.sec('Disposition', `<div class="fd2">${field('X', 'x', kfVal(L, 'x', tl), {unit:'px', ...kfo('x')})}${field('Y', 'y', kfVal(L, 'y', tl), {unit:'px', ...kfo('y')})}</div>
@@ -129,6 +148,8 @@ const INSP = {
         ${anim ? `<p class="is-note">◆ à côté d'une valeur : l'animer avec des images clés à la tête de lecture.</p>` : '<p class="is-note">Visible dans les studios Vidéo et Motion, et à l\'export vidéo.</p>'}`, timed);
     }
     if (timed) h += this.sec('Temps', `<div class="fd2">${field('Début', 'start', L.start, {unit:'s', min:0, step:.1, dec:2})}${field('Durée', 'dur', L.dur, {unit:'s', min:.04, step:.1, dec:2})}</div>`);
+    if (L.t !== 'audio') h += this.sec('Lien', `<label class="fd txt"><span>Adresse (site, mailto:, tel:)</span><input type="url" data-p="href" value="${escH(L.href || '')}" placeholder="https://…" maxlength="500"></label>
+      <p class="is-note">Cliquable dans le PDF, en mode Présenter et dans l'export site web.</p>`, !!L.href, 'link');
     if (L.t !== 'audio') h += this.sec('Avancé', `${field('Mode de fusion', 'blend', L.blend || 'source-over', {type:'select', opts:BLENDS})}
       ${field('Ombre portée', '@shadow', !!L.shadow, {type:'check'})}
       ${L.shadow ? `<div class="fd2">${field('Couleur', 'shadow.c', L.shadow.c, {type:'color'})}${field('Flou', 'shadow.b', L.shadow.b, {unit:'px', min:0, max:200, dec:0})}</div><div class="fd2">${field('Décalage X', 'shadow.x', L.shadow.x, {unit:'px', dec:0})}${field('Décalage Y', 'shadow.y', L.shadow.y, {unit:'px', dec:0})}</div>` : ''}
@@ -154,6 +175,9 @@ const INSP = {
     const k = b.dataset.ia;
     if (k === 'dup') ED.duplicate(); if (k === 'del') ED.deleteSel(); if (k === 'split') TL.split();
     if (k === 'group') return ED.group(); if (k === 'ungroup') return ED.ungroup();
+    if (k === 'present') return PRESENT.open();
+    if (k === 'detach') return VTOOLS.detach(L); if (k === 'xfade') return VTOOLS.crossfade(L); if (k === 'freeze') return VTOOLS.freeze(L); if (k === 'captions') return AI.captions();
+    if (k === 'mockClear' && L){ L.media = ''; return ED.commit('Vider l\'écran'); }
     if (k === 'selgrp' && L?.g) return ED.select(P.layers.filter(x => x.g === L.g).map(x => x.id));
     if (k === 'front' || k === 'back') ED.zorder(k === 'front' ? 1 : -1);
     if (!L) return;

@@ -6,8 +6,8 @@ import {readFileSync} from 'fs';
 import {fileURLToPath} from 'url';
 import path from 'path';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const src = ['00-util.js', '10-model.js', '12-icons.js', '32-elements.js'].map(f => readFileSync(path.join(ROOT, 'src/motion', f), 'utf8')).join('\n');
-const M = new Function('document', 'window', src + '\nreturn {newProject, mkText, mkShape, mkMediaLayer, mkColor, kfVal, setKf, delKf, cleanProject, HIST, syncDur, projEnd, drawOrder, topTrack, ease, visible, fmtTC, fmtT, mkIcon, mkChart, mkQr, mkDraw, pageAdd, pageGo, pageDel, pageMove, pageCount, pageView, allLayers, rescale, docColors, recolor, qrMatrix, simplify, ICONS};')(undefined, {});
+const src = ['00-util.js', '10-model.js', '12-icons.js', '32-elements.js', '33-more.js'].map(f => readFileSync(path.join(ROOT, 'src/motion', f), 'utf8')).join('\n');
+const M = new Function('document', 'window', src + '\nreturn {newProject, mkText, mkShape, mkMediaLayer, mkColor, kfVal, setKf, delKf, cleanProject, HIST, syncDur, projEnd, drawOrder, topTrack, ease, visible, fmtTC, fmtT, mkIcon, mkChart, mkQr, mkDraw, pageAdd, pageGo, pageDel, pageMove, pageCount, pageView, allLayers, rescale, docColors, recolor, qrMatrix, simplify, ICONS, mkTable, mkMock, STICKER_SET, STICKERS, parseTable, tableText, pageId};')(undefined, {});
 
 test('nouveau projet : format et durée selon le studio', () => {
   const v = M.newProject('video'); assert.equal(v.w, 1920); assert.equal(v.h, 1080); assert.equal(v.studio, 'video'); assert.equal(v.bg, '#000000');
@@ -93,4 +93,25 @@ test('QR code : tailles, niveaux de correction, texte trop long', () => {
 test('dessin : simplification du tracé', () => {
   const pts = [...Array(100)].map((_, i) => [i, 0]); assert.equal(M.simplify(pts, .5).length, 2);
   const zig = [...Array(20)].map((_, i) => [i, i % 2 * 10]); assert.ok(M.simplify(zig, .5).length > 10);
+});
+
+test('0.3 : tableaux, maquettes, liens, autocollants ; valeurs hostiles neutralisées', () => {
+  const P = M.newProject('design'); P.layers.push(M.mkTable(P), M.mkMock(P, 'laptop'), M.mkIcon(P, 'seal16', {href:'https://exemple.fr'}));
+  const C = M.cleanProject(JSON.parse(JSON.stringify(P)));
+  assert.deepEqual(C.layers.map(l => l.t), ['table', 'mock', 'icon']); assert.equal(C.layers[0].rows.length, 4); assert.equal(C.layers[1].dev, 'laptop'); assert.equal(C.layers[2].ic, 'seal16'); assert.equal(C.layers[2].href, 'https://exemple.fr');
+  const H = M.cleanProject({media:{med1:{kind:'video', name:'v'}}, layers:[{t:'table', rows:[['a', 'b', 'c'], ['d']]}, {t:'table', rows:[]}, {t:'mock', dev:'toaster', media:'med1'}, {t:'shape', href:'javascript:alert(1)'}, {t:'text', txt:'x', href:'mailto:a@b.fr'}]});
+  assert.deepEqual(H.layers[0].rows[1], ['d', '', ''], 'rangées complétées'); assert.equal(H.layers.filter(l => l.t === 'table').length, 1, 'tableau vide écarté');
+  assert.equal(H.layers[1].dev, 'phone'); assert.equal(H.layers[1].media, '', 'une maquette n\'affiche qu\'une image');
+  assert.equal(H.layers[2].href, undefined, 'lien javascript: refusé'); assert.equal(H.layers[3].href, 'mailto:a@b.fr');
+  assert.ok(M.STICKER_SET.length >= 60); for (const [k] of M.STICKER_SET) assert.ok(M.ICONS[k] && !/NaN|undefined/.test(M.STICKERS[k]), k);
+});
+test('0.3 : commentaires, notes, crédits, transitions de pages', () => {
+  const H = M.cleanProject({notes:'n'.repeat(5000), ptr:'slide', pdur:999, comments:[{id:'c1', pg:'p0', x:1, y:2, by:'Kéliann', t:'Bien', ts:5, re:[{by:'A', t:'Oui'}, {t:''}]}, {t:''}, 'x'],
+    media:{med1:{kind:'image', name:'a', credit:{by:'<b>X</b>', lic:'CC0', src:'javascript:alert(1)'}}}, layers:[], pages:[{id:'p1'}, {id:'p2', notes:'notes p2', layers:[]}], pg:0});
+  assert.equal(H.notes.length, 4000); assert.equal(H.ptr, 'slide'); assert.equal(H.pdur, 120);
+  assert.equal(H.comments.length, 1); assert.equal(H.comments[0].re.length, 1); assert.equal(H.media.med1.credit.src, '', 'source non https écartée'); assert.equal(H.pages[1].notes, 'notes p2');
+});
+test('0.3 : saisie des tableaux (« ; » ou tabulations)', () => {
+  assert.deepEqual(M.parseTable('A ; B\n1 ; 2'), [['A', 'B'], ['1', '2']]); assert.deepEqual(M.parseTable('A\tB\n3\t4'), [['A', 'B'], ['3', '4']]);
+  const P = M.newProject('design'), T = M.mkTable(P, [['x', 'y']]); assert.equal(M.tableText(T), 'x ; y');
 });

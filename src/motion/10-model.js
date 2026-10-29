@@ -21,8 +21,8 @@ const STUDIOS = [
   {id:'audio', name:'Audio', ic:'audio', desc:'Pistes, fondus, mixage'},
 ];
 const TIMED = s => s === 'video' || s === 'motion' || s === 'audio';
-const LAYER_TYPES = ['image', 'video', 'audio', 'text', 'shape', 'color', 'icon', 'chart', 'qr', 'draw'];
-const VISUAL_NAMES = {text:'Texte', image:'Image', video:'Vidéo', audio:'Son', color:'Couleur', icon:'Icône', chart:'Graphique', qr:'QR code', draw:'Dessin'};
+const LAYER_TYPES = ['image', 'video', 'audio', 'text', 'shape', 'color', 'icon', 'chart', 'qr', 'draw', 'table', 'mock'];
+const VISUAL_NAMES = {text:'Texte', image:'Image', video:'Vidéo', audio:'Son', color:'Couleur', icon:'Icône', chart:'Graphique', qr:'QR code', draw:'Dessin', table:'Tableau', mock:'Maquette'};
 const ANIM_PROPS = ['x', 'y', 'sc', 'rot', 'op'];
 const EASES = {lin:'Linéaire', ease:'Douce', in:'Accélération', out:'Décélération', hold:'Maintien'};
 const ease = (k, t) => k === 'hold' ? 0 : k === 'in' ? t * t * t : k === 'out' ? 1 - (1 - t) ** 3 : k === 'ease' ? (t < .5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2) : t;
@@ -39,7 +39,7 @@ const FILTERS = {none:['Original', {}], vivid:['Éclatant', {sat:35, con:8}], wa
   pastel:['Pastel', {sat:-30, bri:14, con:-18, fade:20}], cine:['Cinéma', {con:20, sat:-8, temp:-12, vig:35}], golden:['Doré', {temp:40, sat:18, bri:4}], frost:['Givré', {temp:-40, bri:10, sat:-20}],
   rose:['Rosé', {hue:-12, sat:15, temp:10, bri:6}], neon:['Néon', {sat:70, con:25, hue:20}], lomo:['Lomo', {sat:30, con:30, vig:60}], soft:['Doux', {blur:.6, bri:8, con:-12}],
   noir:['Film noir', {sat:-100, con:60, vig:50, grain:25}], summer:['Été', {temp:22, sat:25, bri:8}], autumn:['Automne', {temp:30, hue:-8, sat:10, con:8}], ocean:['Océan', {temp:-25, hue:8, sat:20}]};
-const ADJ_KEYS = {bri:['Luminosité', -100, 100], con:['Contraste', -100, 100], sat:['Saturation', -100, 100], hue:['Teinte', -180, 180], temp:['Température', -100, 100], sepia:['Sépia', 0, 100], blur:['Flou', 0, 30], vig:['Vignettage', 0, 100], fade:['Voile', 0, 100], grain:['Grain', 0, 100]};
+const ADJ_KEYS = {bri:['Luminosité', -100, 100], con:['Contraste', -100, 100], sat:['Saturation', -100, 100], hue:['Teinte', -180, 180], temp:['Température', -100, 100], sepia:['Sépia', 0, 100], blur:['Flou', 0, 30], vig:['Vignettage', 0, 100], fade:['Voile', 0, 100], grain:['Grain', 0, 100], sharp:['Netteté', 0, 100]};
 /* polices : [nom, famille de secours, catégorie, axes Google Fonts] — chargées à la demande (une police n'est téléchargée que si elle sert) */
 const FONTS_M = [
   ['Inter', 'sans-serif', 'Sans', 'wght@300;400;500;600;700;800;900'], ['Bricolage Grotesque', 'sans-serif', 'Sans', 'opsz,wght@12..96,400;12..96,800'], ['Plus Jakarta Sans', 'sans-serif', 'Sans', 'wght@400;600;700;800'],
@@ -134,6 +134,11 @@ const SHAPE_NAMES = {rect:'Rectangle', round:'Rectangle arrondi', ellipse:'Ellip
 const LINE_KINDS = new Set(['line', 'larrow', 'ldarrow']);
 const DASHES = {none:'Continu', dash:'Tirets', dot:'Pointillés'};
 const PATTERNS = {dots:'Pois', lines:'Rayures', grid:'Quadrillage', waves:'Vagues'};
+const MOCKS = {phone:'Téléphone', tablet:'Tablette', laptop:'Ordinateur portable', browser:'Navigateur web', desktop:'Écran', watch:'Montre'};
+const MOCK_AR = {phone:[9, 19.5], tablet:[3, 4], laptop:[16, 10.6], browser:[16, 10.8], desktop:[16, 12], watch:[4, 5]};
+const PAGE_TR = {none:'Aucune', fade:'Fondu', slide:'Glissement', zoom:'Zoom', wipe:'Volet'};
+/* lien d'un élément : web, e-mail ou téléphone uniquement */
+const hrefOk = h => typeof h === 'string' && h.length <= 500 && /^(https?:\/\/[^\s<>"]+|mailto:[^\s<>"]+|tel:[+\d .()-]+)$/i.test(h);
 const CHART_KINDS = {col:'Colonnes', bar:'Barres', line:'Courbe', area:'Aires', pie:'Secteurs', donut:'Anneau', prog:'Jauge'};
 const TFX = {none:'Aucun', shadow:'Ombre', lift:'Relief', hollow:'Creux', splice:'Décalé', echo:'Écho', glitch:'Glitch', neon:'Néon', outline:'Contour épais'};
 const LISTS = {none:'Aucune', bullet:'Puces', num:'Numérotée', check:'Coches'};
@@ -156,6 +161,11 @@ function mkChart(P, ck = 'col', o = {}){
 }
 function mkQr(P, txt = 'https://studio-prism.com', o = {}){ return baseLayer(P, 'qr', {name:'QR code', txt, col:'#16131F', bgc:'#FFFFFF', ecc:'M', ...boxC(P, .32), ...o}); }
 function mkDraw(P, pts, o = {}){ return baseLayer(P, 'draw', {name:'Dessin', pts, col:'#16131F', sw:6, ...o}); }
+function mkTable(P, rows, o = {}){
+  rows ||= [['Produit', 'Quantité', 'Prix'], ['Article A', '2', '24 €'], ['Article B', '1', '15 €'], ['Total', '', '39 €']];
+  const b = boxC(P, .6, 1.6); return baseLayer(P, 'table', {name:'Tableau', rows, fs:Math.round(Math.min(P.w, P.h) * .03), font:'Inter', col:'#16131F', hdr:true, hbg:'#16131F', hcol:'#FFFFFF', bg:'#FFFFFF', alt:'#F3F1FA', bc:'#D9D5E6', bw:1, align:'l', ...b, ...o});
+}
+function mkMock(P, dev = 'phone', o = {}){ const [a, b] = MOCK_AR[dev] || [1, 1], h = Math.round(P.h * .7), w = Math.round(h * a / b); return baseLayer(P, 'mock', {name:'Maquette · ' + (MOCKS[dev] || ''), dev, fc:'#16131F', media:'', fit:'cover', x:Math.round((P.w - w) / 2), y:Math.round((P.h - h) / 2), w, h, ...o}); }
 
 /* ---------- images clés : valeur d'une propriété à l'instant tl (relatif au calque) ---------- */
 function kfVal(L, p, tl){
@@ -184,17 +194,18 @@ function drawOrder(P){ return P.layers.map((l, i) => [l, i]).filter(([l]) => l.t
 
 /* ---------- pages ---------- */
 const pageCount = P => P.pages?.length || 1;
+const pageId = (P, i = P.pg || 0) => P.pages ? P.pages[i]?.id : 'p0';
 function pageView(P, i){ // projet « vu » sur la page i (pour le rendu des vignettes, de l'export PDF…)
   if (!P.pages || i === (P.pg || 0)) return P; const g = P.pages[i]; return g ? {...P, bg:g.bg === undefined ? P.bg : g.bg, layers:g.layers || []} : P;
 }
 function pageGo(P, i){
   if (!P.pages || i === P.pg || i < 0 || i >= P.pages.length) return false;
-  P.pages[P.pg] = {id:P.pages[P.pg].id, bg:P.bg, layers:P.layers};
-  const g = P.pages[i]; P.layers = g.layers || []; P.bg = g.bg === undefined ? '#FFFFFF' : g.bg; P.pages[i] = {id:g.id, live:true}; P.pg = i; return true;
+  P.pages[P.pg] = {id:P.pages[P.pg].id, bg:P.bg, layers:P.layers, notes:P.notes || ''};
+  const g = P.pages[i]; P.layers = g.layers || []; P.bg = g.bg === undefined ? '#FFFFFF' : g.bg; P.notes = g.notes || ''; P.pages[i] = {id:g.id, live:true}; P.pg = i; return true;
 }
 function pageAdd(P, copy, at){
   if (!P.pages){ P.pages = [{id:uid('pg'), live:true}]; P.pg = 0; }
-  const n = {id:uid('pg'), bg:copy ? P.bg : (P.bg === null ? null : '#FFFFFF'), layers:copy ? deep(P.layers).map(l => ({...l, id:uid('l')})) : []};
+  const n = {id:uid('pg'), bg:copy ? P.bg : (P.bg === null ? null : '#FFFFFF'), layers:copy ? deep(P.layers).map(l => ({...l, id:uid('l')})) : [], notes:copy ? P.notes || '' : ''};
   const i = at == null ? P.pg + 1 : at; P.pages.splice(i, 0, n); if (i <= P.pg) P.pg++; pageGo(P, i); return i;
 }
 function pageDel(P, i){
@@ -213,7 +224,7 @@ function rescale(P, f){
     if (full(L) && (L.t === 'color' || ((L.t === 'image' || L.t === 'video') && L.fit === 'cover'))){ L.x = 0; L.y = 0; L.w = f.w; L.h = f.h; continue; }
     L.x = round(L.x * k + ox, 1); L.y = round(L.y * k + oy, 1); L.w = round(L.w * k, 1); L.h = round(L.h * k, 1);
     if (L.kf?.x) L.kf.x = L.kf.x.map(q => [q[0], round(q[1] * k + ox, 1), q[2]]); if (L.kf?.y) L.kf.y = L.kf.y.map(q => [q[0], round(q[1] * k + oy, 1), q[2]]);
-    if (L.t === 'text'){ L.fs = round(L.fs * k, 1); L.tsw = round((L.tsw || 0) * k, 1); }
+    if (L.t === 'text' || L.t === 'table'){ L.fs = round(L.fs * k, 1); L.tsw = round((L.tsw || 0) * k, 1); }
     if (L.sw && L.t !== 'icon') L.sw = round(L.sw * k, 1); if (L.r) L.r = round(L.r * k, 1); if (L.shadow){ L.shadow.b = round(L.shadow.b * k, 1); L.shadow.x = round(L.shadow.x * k, 1); L.shadow.y = round(L.shadow.y * k, 1); }
   }
   P.w = f.w; P.h = f.h; P.fmt = f.id || ''; return P;
@@ -221,7 +232,7 @@ function rescale(P, f){
 /* couleurs utilisées par le projet (palette du document), de la plus présente à la moins présente */
 function docColors(P){
   const n = {}; const add = (c, w = 1) => { if (hexOk(c)){ const k = c.slice(0, 7).toUpperCase(); n[k] = (n[k] || 0) + w; } };
-  add(P.bg, 3); for (const L of allLayers(P)){ add(L.fill, 2); add(L.fill2); add(L.col, 2); add(L.col2); add(L.tbg); add(L.stroke); add(L.tstroke); add(L.bgc); (L.pal || []).forEach(c => add(c)); if (L.duo){ add(L.duo.a); add(L.duo.b); } }
+  add(P.bg, 3); for (const L of allLayers(P)){ add(L.fill, 2); add(L.fill2); add(L.col, 2); add(L.col2); add(L.tbg); add(L.stroke); add(L.tstroke); add(L.bgc); add(L.hbg); add(L.alt); add(L.fc); (L.pal || []).forEach(c => add(c)); if (L.duo){ add(L.duo.a); add(L.duo.b); } }
   return Object.entries(n).sort((a, b) => b[1] - a[1]).map(x => x[0]);
 }
 /* « Styles » : remplace les couleurs du document par celles d'une palette, rang pour rang */
@@ -230,7 +241,7 @@ function recolor(P, pal){
   const sw = c => hexOk(c) && map[c.slice(0, 7).toUpperCase()] ? map[c.slice(0, 7).toUpperCase()] + (c.length > 7 ? c.slice(7) : '') : c;
   if (hexOk(P.bg)) P.bg = sw(P.bg);
   for (const g of P.pages || []) if (!g.live && hexOk(g.bg)) g.bg = sw(g.bg);
-  for (const L of allLayers(P)){ for (const k of ['fill', 'fill2', 'col', 'col2', 'tbg', 'stroke', 'tstroke', 'bgc']) if (L[k]) L[k] = sw(L[k]); if (L.pal) L.pal = L.pal.map(sw); if (L.tfx?.c) L.tfx.c = sw(L.tfx.c); }
+  for (const L of allLayers(P)){ for (const k of ['fill', 'fill2', 'col', 'col2', 'tbg', 'stroke', 'tstroke', 'bgc', 'hbg', 'alt', 'fc']) if (L[k]) L[k] = sw(L[k]); if (L.pal) L.pal = L.pal.map(sw); if (L.tfx?.c) L.tfx.c = sw(L.tfx.c); }
   return Object.keys(map).length;
 }
 
@@ -250,6 +261,7 @@ function cleanLayers(P, arr, budget){
     L.track = clamp(Math.round(num(l0.track)), 0, 99); L.start = clamp(num(l0.start), 0, 36000); L.dur = clamp(num(l0.dur, 5), 1 / 60, 36000);
     L.op = clamp(num(l0.op, 1), 0, 1); L.sc = clamp(num(l0.sc, 1), .01, 50); L.vis = l0.vis !== false; L.lock = !!l0.lock; L.blend = BLENDS[l0.blend] ? l0.blend : 'source-over';
     if (typeof l0.g === 'string' && /^[\w-]{2,40}$/.test(l0.g)) L.g = l0.g;
+    if (hrefOk(l0.href)) L.href = l0.href;
     for (const p of ANIM_PROPS){ const k = l0.kf?.[p]; if (Array.isArray(k) && k.length) L.kf[p] = k.slice(0, 200).filter(x => Array.isArray(x) && isNum(+x[0]) && isNum(+x[1])).map(x => [round(+x[0], 3), +x[1], EASES[x[2]] ? x[2] : 'ease']).sort((a, b) => a[0] - b[0]); if (L.kf[p] && !L.kf[p].length) delete L.kf[p]; }
     for (const s of ['tin', 'tout']){ const x = l0[s] || {}; L[s] = {k:(s === 'tin' ? FX_IN : FX_OUT)[x.k] && (l0.t === 'text' || !TEXT_FX.has(x.k)) ? x.k : 'none', d:clamp(num(x.d, .6), .05, 10)}; if (x.c && hexOk(x.c)) L[s].c = x.c; }
     const t = l0.t;
@@ -272,6 +284,13 @@ function cleanLayers(P, arr, budget){
       if (!L.pal.length) L.pal = [...PALETTE_DEF];
     } else if (t === 'qr'){
       Object.assign(L, {txt:strC(l0.txt, 600), col:colOr(l0.col, '#16131F'), bgc:colOr(l0.bgc, ''), ecc:['L', 'M', 'Q', 'H'].includes(l0.ecc) ? l0.ecc : 'M'});
+    } else if (t === 'table'){
+      const rows = (Array.isArray(l0.rows) ? l0.rows : []).slice(0, 30).filter(Array.isArray).map(r => r.slice(0, 12).map(c => strC(c, 200)));
+      if (!rows.length) continue; const nc = Math.max(...rows.map(r => r.length)); rows.forEach(r => { while (r.length < nc) r.push(''); });
+      Object.assign(L, {rows, fs:clamp(num(l0.fs, 30), 4, 400), font:FONTS_M.some(f => f[0] === l0.font) ? l0.font : 'Inter', col:colOr(l0.col, '#16131F'), hdr:l0.hdr !== false, hbg:colOr(l0.hbg, ''), hcol:colOr(l0.hcol, '#FFFFFF'),
+        bg:colOr(l0.bg, ''), alt:colOr(l0.alt, ''), bc:colOr(l0.bc, ''), bw:clamp(num(l0.bw, 1), 0, 20), align:['l', 'c', 'r'].includes(l0.align) ? l0.align : 'l'});
+    } else if (t === 'mock'){
+      Object.assign(L, {dev:MOCKS[l0.dev] ? l0.dev : 'phone', fc:colOr(l0.fc, '#16131F'), media:P.media[l0.media]?.kind === 'image' ? l0.media : '', fit:['cover', 'contain'].includes(l0.fit) ? l0.fit : 'cover'});
     } else if (t === 'draw'){
       const pts = (Array.isArray(l0.pts) ? l0.pts : []).slice(0, 3000).filter(q => Array.isArray(q) && isNum(+q[0]) && isNum(+q[1])).map(q => [round(clamp(+q[0], -1, 2), 4), round(clamp(+q[1], -1, 2), 4)]);
       if (pts.length < 2) continue;
@@ -285,6 +304,7 @@ function cleanLayers(P, arr, budget){
       if (t !== 'audio'){
         if (l0.duo && hexOk(l0.duo.a) && hexOk(l0.duo.b)) L.duo = {a:l0.duo.a, b:l0.duo.b};
         if (l0.bgk && hexOk(l0.bgk.c)) L.bgk = {c:l0.bgk.c, tol:clamp(num(l0.bgk.tol, 30), 1, 100), soft:clamp(num(l0.bgk.soft, 10), 0, 50)};
+        if (l0.oln && hexOk(l0.oln.c)) L.oln = {c:l0.oln.c, w:clamp(num(l0.oln.w, 12), 1, 80)};
       } else Object.assign(L, {eqLo:clamp(num(l0.eqLo), -15, 15), eqHi:clamp(num(l0.eqHi), -15, 15), pan:clamp(num(l0.pan), -1, 1)});
       if (t === 'video') Object.assign(L, {eqLo:clamp(num(l0.eqLo), -15, 15), eqHi:clamp(num(l0.eqHi), -15, 15), pan:clamp(num(l0.pan), -1, 1)});
     }
@@ -307,15 +327,19 @@ function cleanProject(j){
     const kind = ['image', 'video', 'audio'].includes(m.kind) ? m.kind : null; if (!kind) continue;
     P.media[k] = {id:k, kind, name:strC(m.name || 'Média', 120), mime:strC(m.mime, 60), size:Math.max(0, Math.round(num(m.size))), w:Math.round(num(m.w)), h:Math.round(num(m.h)), dur:num(m.dur),
       hasAudio:!!m.hasAudio, path:typeof m.path === 'string' && /^spectramotion\/[\w-]+\/[\w-]+\/[\w.-]+$/.test(m.path) ? m.path : '', cloud:!!m.cloud && !!m.path, thumb:typeof m.thumb === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(m.thumb) && m.thumb.length < 12000 ? m.thumb : ''};
+    if (m.credit && typeof m.credit === 'object') P.media[k].credit = {by:strC(m.credit.by, 160), lic:strC(m.credit.lic, 60), src:/^https:\/\/[^\s<>"]+$/.test(m.credit.src || '') ? strC(m.credit.src, 400) : ''};
   }
   const budget = {n:3000};
+  P.notes = strC(j.notes, 4000); if (PAGE_TR[j.ptr]) P.ptr = j.ptr; if (isNum(+j.pdur) && +j.pdur > 0) P.pdur = clamp(+j.pdur, 1, 120);
+  if (Array.isArray(j.comments)) P.comments = j.comments.slice(0, 300).filter(c => c && typeof c === 'object' && c.t).map(c => ({id:/^[\w-]{2,40}$/.test(c.id) ? c.id : uid('c'), pg:strC(c.pg, 40), x:clamp(num(c.x), -1e5, 1e5), y:clamp(num(c.y), -1e5, 1e5),
+    by:strC(c.by, 80), uid:strC(c.uid, 128), t:strC(c.t, 2000), ts:Math.round(num(c.ts)), done:!!c.done, re:(Array.isArray(c.re) ? c.re : []).slice(0, 50).filter(r => r && r.t).map(r => ({by:strC(r.by, 80), uid:strC(r.uid, 128), t:strC(r.t, 2000), ts:Math.round(num(r.ts))}))}));
   P.layers = cleanLayers(P, j.layers, budget);
   if (Array.isArray(j.pages) && j.pages.length > 1){
     const pg = clamp(Math.round(num(j.pg)), 0, Math.min(j.pages.length, 100) - 1); P.pages = [];
     j.pages.slice(0, 100).forEach((g, i) => {
       const id = g && /^[\w-]{2,40}$/.test(g.id) ? g.id : uid('pg');
       if (i === pg) P.pages.push({id, live:true});
-      else P.pages.push({id, bg:g?.bg === null ? null : colOr(g?.bg, '#FFFFFF'), layers:cleanLayers(P, g?.layers, budget)});
+      else P.pages.push({id, bg:g?.bg === null ? null : colOr(g?.bg, '#FFFFFF'), layers:cleanLayers(P, g?.layers, budget), notes:strC(g?.notes, 4000)});
     });
     P.pg = pg;
   }

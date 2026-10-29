@@ -246,6 +246,8 @@ function renderFrame(ctx, P, t, o = {}){
     } else if (L.t === 'chart'){ drawChart(ctx, L, w, h);
     } else if (L.t === 'qr'){ drawQr(ctx, L, w, h);
     } else if (L.t === 'draw'){ drawStroke(ctx, L, w, h);
+    } else if (L.t === 'table'){ drawTable(ctx, L, w, h);
+    } else if (L.t === 'mock'){ drawMock(ctx, L, w, h, P, o);
     } else if (L.t === 'image' || L.t === 'video'){
       const el0 = o.els ? o.els[L.id] : MEDIA.el(m);
       if (!el0 || (L.t === 'video' && el0.readyState < 2)){ if (!el0 && (!m || MEDIA.missing(m) || o.final)) drawMissing(ctx, w, h, m, 1); }

@@ -85,7 +85,7 @@ const ED = {
   /* média de la bibliothèque → calque (images au centre ; vidéos / sons à la suite sur la piste, ou à la tête de lecture) */
   addMedia(m, atHead){
     if (!m || this.readOnly) return; const P = this.P, timed = TIMED(this.studio);
-    const S = this.sel1(); if (m.kind === 'image' && S && ((S.t === 'shape' && S.slot) || (S.t === 'image' && S.frame))) return this.fillSlot(S, m);
+    const S = this.sel1(); if (m.kind === 'image' && S && ((S.t === 'shape' && S.slot) || S.t === 'mock' || (S.t === 'image' && S.frame))) return this.fillSlot(S, m);
     const L = mkMediaLayer(P, m, {track:m.kind === 'audio' ? 0 : topTrack(P)});
     if (m.kind === 'image' && !timed){ L.start = 0; L.dur = P.dur; }
     else if (timed){
@@ -196,14 +196,15 @@ const ED = {
   /* cadre photo : l'image prend la place (et la forme) du cadre */
   fillSlot(slot, m){
     const P = this.P, i = P.layers.indexOf(slot); if (i < 0 || !m) return false;
+    if (slot.t === 'mock'){ if (m.kind !== 'image') return toast('L\'écran d\'une maquette accepte une image.'), false; slot.media = m.id; this.sel = new Set([slot.id]); this.commit('Écran de la maquette'); BUS.emit('sel'); return true; }
     const L = mkMediaLayer(P, m, {x:slot.x, y:slot.y, w:slot.w, h:slot.h, rot:slot.rot, track:slot.track, start:slot.start, dur:slot.dur, fit:'cover', frame:true, g:slot.g, tin:slot.tin, tout:slot.tout, kf:deep(slot.kf || {}),
       mask:slot.t === 'image' ? slot.mask : slot.k === 'rect' ? 'none' : MASKS[slot.k] ? slot.k : 'none', r:slot.t === 'image' ? slot.r : slot.k === 'rect' ? slot.r || 0 : 0, name:'Photo · ' + m.name});
     if (!L.g) delete L.g; P.layers[i] = L; this.sel = new Set([L.id]); this.commit('Remplir le cadre'); BUS.emit('sel'); return true;
   },
-  slotAt(pt, kind){ return [...drawOrder(this.P)].reverse().find(l => visible(l, PLAY.t) && !l.lock && ((l.t === 'shape' && l.slot) || (l.t === 'image' && l.frame && kind === 'image')) && (() => { const b = STAGE.box(l); return Math.abs(pt.x - b.cx) <= b.w / 2 && Math.abs(pt.y - b.cy) <= b.h / 2; })()) || null; },
+  slotAt(pt, kind){ return [...drawOrder(this.P)].reverse().find(l => visible(l, PLAY.t) && !l.lock && ((l.t === 'shape' && l.slot) || l.t === 'mock' || (l.t === 'image' && l.frame && kind === 'image')) && (() => { const b = STAGE.box(l); return Math.abs(pt.x - b.cx) <= b.w / 2 && Math.abs(pt.y - b.cy) <= b.h / 2; })()) || null; },
   /* image déposée par glisser sur un cadre */
   dropOnSlot(L){
-    const b = STAGE.box(L), pt = {x:b.cx, y:b.cy}, S = [...drawOrder(this.P)].reverse().find(l => l !== L && l.t === 'shape' && l.slot && visible(l, PLAY.t) && (() => { const q = STAGE.box(l); return Math.abs(pt.x - q.cx) <= q.w / 2 && Math.abs(pt.y - q.cy) <= q.h / 2; })());
+    const b = STAGE.box(L), pt = {x:b.cx, y:b.cy}, S = [...drawOrder(this.P)].reverse().find(l => l !== L && ((l.t === 'shape' && l.slot) || l.t === 'mock') && visible(l, PLAY.t) && (() => { const q = STAGE.box(l); return Math.abs(pt.x - q.cx) <= q.w / 2 && Math.abs(pt.y - q.cy) <= q.h / 2; })());
     if (!S) return; const m = this.P.media[L.media]; this.P.layers = this.P.layers.filter(x => x !== L); this.fillSlot(S, m);
   },
   /* « Animer toute la page » : entrées échelonnées, du fond vers le premier plan */
@@ -254,6 +255,10 @@ const ED = {
       if (k === 'shadow' && L){ L.shadow = v ? {c:'#00000066', b:24, x:0, y:10} : undefined; if (!v) delete L.shadow; this.commit('Ombre'); return; }
       if (k === 'pen.sw'){ this.pen.sw = clamp(+v, 1, 400); const o = el.closest('label')?.querySelector('output'); if (o) o.textContent = Math.round(v) + ' px'; return; }
       if (k === 'brand.title' || k === 'brand.body'){ if (!final) return; const br = this.brand(); this.setBrand({...br, fonts:{...(br.fonts || {}), [k.slice(6)]:v}}); if (v) fontNeed(v); PANEL.render(); return; }
+      if (k.startsWith('oln.') && L?.oln){ L.oln[k.slice(4)] = k === 'oln.c' ? v : +v; PIX.cache.clear(); const o = el.closest('label')?.querySelector('output'); if (o && k === 'oln.w') o.textContent = Math.round(v) + ' px'; if (final) this.commit('Contour'); else STAGE.paint(); return; }
+      if (k === 'notes'){ P.notes = String(v).slice(0, 4000); if (final) this.commit('Notes'); return; }
+      if (k === 'ptr' || k === 'pdur'){ P[k] = k === 'pdur' ? clamp(+v, 1, 120) : v; if (final) this.commit('Présentation'); return; }
+      if (k === 'tableRows' && L?.t === 'table'){ const r = parseTable(v); if (r.length){ const nc = Math.max(...r.map(x => x.length)); r.forEach(x => { while (x.length < nc) x.push(''); }); L.rows = r; if (final) this.commit('Tableau'); else STAGE.paint(); } return; }
       if ((k.startsWith('bgk.') || k.startsWith('duo.')) && L){ const [a, b] = k.split('.'); if (!L[a]) return; L[a][b] = b === 'c' || a === 'duo' ? v : +v; if (a === 'bgk') PIX.cache.clear(); const o = el.closest('label')?.querySelector('output'); if (o) o.textContent = Math.round(v); if (final) this.commit(a === 'bgk' ? 'Retirer le fond' : 'Bichromie'); else STAGE.paint(); return; }
       if (k === 'tfx' && L){ if (v === 'none') delete L.tfx; else L.tfx = {k:v, c:L.tfx?.c || (v === 'neon' ? '#14C2EC' : v === 'shadow' ? '#16131F' : '#FF3F86'), d:L.tfx?.d ?? 50}; this.commit('Effet de texte'); return; }
       if (k.startsWith('tfx.') && L?.tfx){ L.tfx[k.slice(4)] = k === 'tfx.c' ? v : +v; if (final) this.commit('Effet de texte'); else STAGE.paint(); return; }
@@ -279,7 +284,9 @@ const ED = {
       if (p === 'dur'){ let d = clamp(v, 1 / P.fps, 36000); const m = X.media && P.media[X.media]; if ((X.t === 'video' || X.t === 'audio') && m?.dur) d = Math.min(d, (m.dur - (X.in || 0)) / (X.speed || 1)); X.dur = round(d, 3); continue; }
       if (p === 'in'){ const m = P.media[X.media]; X.in = round(clamp(v, 0, Math.max(0, (m?.dur || 1e9) - .05)), 3); continue; }
       if (p === 'w' || p === 'h') v = Math.max(1, v);
-      if (['fw', 'r', 'sw', 'tsw', 'fs', 'ga', 'lh', 'ls', 'vol', 'fadeIn', 'fadeOut', 'eqLo', 'eqHi', 'pan', 'curve', 'pats'].includes(p)) v = +v;
+      if (p === 'href'){ v = String(v).trim(); if (v && !/^(https?:|mailto:|tel:)/i.test(v)) v = 'https://' + v; if (v && !hrefOk(v)){ if (final) toast('Adresse non valide (https://…, mailto:… ou tel:…)'); continue; } if (!v){ delete X.href; continue; } }
+      if (['fw', 'r', 'sw', 'tsw', 'fs', 'ga', 'lh', 'ls', 'vol', 'fadeIn', 'fadeOut', 'eqLo', 'eqHi', 'pan', 'curve', 'pats', 'bw'].includes(p)) v = +v;
+      if (p === 'font' && X.t !== 'text') fontNeed(v).then(() => document.fonts?.load(`700 40px ${fontCss(v)}`)).then(() => STAGE.paint()).catch(() => {});
       if (p === 'font' && X.t === 'text'){ fontNeed(v).then(() => document.fonts?.load(textFont(X))).then(() => { X.h = Math.max(measureText(X).h, 4); STAGE.paint(); }).catch(() => {}); }
       if (p === 'txt' && X.t === 'qr' && !qrMatrix(String(v), X.ecc || 'M')){ toast('Texte trop long pour un QR code'); continue; }
       X[p] = v;
@@ -358,17 +365,18 @@ const ED = {
 const BUSY = { show(t){ const b = $('#edBusy'); b.querySelector('span').textContent = t; b.hidden = false; }, hide(){ $('#edBusy').hidden = true; } };
 /* polices du projet chargées avant le dessin */
 function fontsReady(P){
-  const ls = allLayers(P).filter(l => l.t === 'text' || l.t === 'chart'), names = [...new Set(ls.map(l => l.font || 'Inter'))];
+  const ls = allLayers(P).filter(l => l.t === 'text' || l.t === 'chart' || l.t === 'table'), names = [...new Set(ls.map(l => l.font || 'Inter'))];
   return Promise.all(names.map(n => fontNeed(n))).then(() => {
     if (!document.fonts?.load) return null;
-    const want = new Set(ls.map(l => l.t === 'chart' ? `700 40px ${fontCss(l.font)}` : `${l.it ? 'italic ' : ''}${l.fw || 700} 40px ${fontCss(l.font)}`));
+    const want = new Set(ls.map(l => l.t !== 'text' ? `700 40px ${fontCss(l.font)}` : `${l.it ? 'italic ' : ''}${l.fw || 700} 40px ${fontCss(l.font)}`));
     return Promise.all([...want].map(f => document.fonts.load(f).catch(() => null)));
   }).then(() => null);
 }
 
 /* ---------- câblage de l'interface ---------- */
 function wireEditor(){
-  STAGE.init(); TL.init(); PANEL.init(); INSP.init(); PAGES.init();
+  STAGE.init(); TL.init(); PANEL.init(); INSP.init(); PAGES.init(); VERSIONS.start();
+  $('#presentBtn').addEventListener('click', () => PRESENT.open());
   $('#stgGrid').addEventListener('click', e => { STAGE.grid = !STAGE.grid; e.currentTarget.setAttribute('aria-pressed', STAGE.grid); STAGE.overlay(); });
   $('#studioNav').innerHTML = STUDIOS.map(s => `<button type="button" role="tab" data-studio="${s.id}" aria-selected="false" title="${s.name} · ${s.desc}">${ico(s.ic)}<span>${s.name}</span></button>`).join('');
   $('#studioNav').addEventListener('click', e => { const b = e.target.closest('[data-studio]'); if (b && !ED.readOnly) ED.setStudio(b.dataset.studio); });
@@ -434,6 +442,8 @@ function onKey(e){
   if (mod && k === 'a'){ e.preventDefault(); return ED.select(ED.P.layers.filter(l => !l.lock && (TIMED(ED.studio) || visible(l, PLAY.t))).map(l => l.id)); }
   if (mod && k === 's'){ e.preventDefault(); window.SWHome?.flush(); toast('Enregistré', 1000); return; }
   if (mod && k === 'e'){ e.preventDefault(); return IO.dialog(); }
+  if (mod && k === 'f'){ e.preventDefault(); return findDlg(); }
+  if (mod && e.altKey && k === 'p'){ e.preventDefault(); return PRESENT.open(); }
   if (mod && (k === '+' || k === '=')){ e.preventDefault(); return STAGE.setZoom(STAGE.zoom * 1.25); }
   if (mod && k === '-'){ e.preventDefault(); return STAGE.setZoom(STAGE.zoom / 1.25); }
   if (mod && k === '0'){ e.preventDefault(); return STAGE.fit(); }
@@ -462,7 +472,9 @@ async function fileMenu(btn){
   const k = await ED.menu(btn, [{k:'new', t:'Nouveau projet', s:'Retour à l\'accueil'}, {k:'dup', t:'Dupliquer le projet'}, '-',
     {k:'import', t:'Importer des médias…', s:'Images, vidéos, sons'}, {k:'open', t:'Ouvrir un fichier projet…', s:'.spectramotion ou paquet .zip'}, '-',
     {k:'export', t:'Exporter…', s:'Image, vidéo, son, projet (Ctrl + E)'}, {k:'tpl', t:'Enregistrer comme modèle personnel'}, '-',
-    {k:'settings', t:'Paramètres du projet', s:'Format, images par seconde, fond'}, {k:'keys', t:'Raccourcis clavier', s:'Touche ?'}]);
+    {k:'present', t:'Présenter', s:'Plein écran, page par page (Ctrl + Alt + P)'}, {k:'find', t:'Rechercher et remplacer…', s:'Dans toutes les pages (Ctrl + F)'}, {k:'versions', t:'Versions…', s:'Revenir à un état précédent'}, {k:'credits', t:'Crédits des médias libres', s:'Auteurs et licences'}, '-',
+    {k:'settings', t:'Paramètres du projet', s:'Format, images par seconde, fond, notes'}, {k:'keys', t:'Raccourcis clavier', s:'Touche ?'}]);
+  if (k === 'present') PRESENT.open(); if (k === 'find') findDlg(); if (k === 'versions') versionsDlg(); if (k === 'credits') creditsDlg();
   if (k === 'new') window.SWHome?.show('home');
   if (k === 'dup') window.SWHome?.duplicateCurrent?.();
   if (k === 'import') ED.importPick('');
@@ -472,9 +484,34 @@ async function fileMenu(btn){
   if (k === 'keys') shortcutsDlg();
   void full;
 }
+function findDlg(){
+  window.SWDlg.open(`<h3>Rechercher et remplacer</h3><p class="dlg-p">Dans tous les textes, tableaux et graphiques de toutes les pages.</p><div class="xp-g"><label class="fd txt"><span>Rechercher</span><input type="text" id="frQ"></label><label class="fd txt"><span>Remplacer par</span><input type="text" id="frR"></label></div>
+    <label class="ap-check"><input type="checkbox" id="frC"><span>Respecter les majuscules</span></label><p class="dlg-p small" id="frN"></p><div class="dlg-acts"><button type="button" class="ap-btn alt" data-dlg="close">Fermer</button><button type="button" class="ap-btn" id="frGo">Tout remplacer</button></div>`, d => {
+    const q = d.querySelector('#frQ'), n = d.querySelector('#frN'); q.focus(); q.oninput = () => { const c = countMatches(q.value); n.textContent = q.value ? `${c} occurrence${c > 1 ? 's' : ''}` : ''; };
+    d.querySelector('#frGo').onclick = () => { if (ED.readOnly) return; const c = findReplace(q.value, d.querySelector('#frR').value, {case:d.querySelector('#frC').checked}); n.textContent = c ? `${c} remplacement${c > 1 ? 's' : ''} (Ctrl + Z pour annuler)` : 'Aucune occurrence.'; };
+  });
+}
+async function versionsDlg(){
+  const vs = await VERSIONS.all(), dt = ts => new Date(ts).toLocaleString('fr-FR', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'});
+  window.SWDlg.open(`<h3>Versions</h3><p class="dlg-p">Gardées sur cet appareil : une version automatique toutes les 5 minutes de travail, et celles que vous nommez.</p>
+    <div class="xp-g"><label class="fd txt"><span>Nom de la version</span><input type="text" id="vName" placeholder="ex. : avant relecture"></label></div><button type="button" class="ap-btn alt" id="vSave">Enregistrer cette version</button>
+    <div class="vlist">${vs.length ? vs.map(v => `<div class="vit"><img alt="" src="${v.thumb || ''}"><div><b>${escH(v.name)}</b><small>${dt(v.ts)}</small></div><button type="button" class="ap-btn alt" data-vres="${v.id}">Restaurer</button></div>`).join('') : '<p class="dlg-p small">Aucune version pour l\'instant.</p>'}</div>
+    <div class="dlg-acts"><button type="button" class="ap-btn" data-dlg="close">Fermer</button></div>`, d => {
+    d.querySelector('#vSave').onclick = async () => { await VERSIONS.save(d.querySelector('#vName').value.trim() || 'Version du ' + dt(Date.now())); window.SWDlg.close(); versionsDlg(); toast('Version enregistrée'); };
+    d.querySelectorAll('[data-vres]').forEach(b => b.onclick = async () => { window.SWDlg.close(); await VERSIONS.restore(b.dataset.vres); });
+  });
+}
+function creditsDlg(){
+  const t = STOCK.credits(ED.P);
+  window.SWDlg.open(`<h3>Crédits des médias libres</h3><p class="dlg-p">${t ? 'Les licences libres demandent de citer l\'auteur et la licence. Copiez ce texte dans la description de votre publication ou en fin de document.' : 'Ce projet n\'utilise aucun média de Wikimedia Commons.'}</p>
+    ${t ? `<textarea class="pn-ta" rows="8" readonly id="crT">${escH(t)}</textarea>` : ''}<div class="dlg-acts"><button type="button" class="ap-btn alt" data-dlg="close">Fermer</button>${t ? '<button type="button" class="ap-btn" id="crC">Copier</button><button type="button" class="ap-btn alt" id="crA">Ajouter en bas de la page</button>' : ''}</div>`, d => {
+    d.querySelector('#crC')?.addEventListener('click', () => { navigator.clipboard?.writeText(t).then(() => toast('Crédits copiés')); });
+    d.querySelector('#crA')?.addEventListener('click', () => { const P = ED.P, L = mkText(P, {txt:'Crédits : ' + t.split('\n').map(x => x.split(' — ').slice(1, 3).join(', ')).join(' · '), fs:Math.round(Math.min(P.w, P.h) * .014), fw:400, col:'#5B5B66', align:'l', ...ED.timing(5), track:topTrack(P), name:'Crédits'}); L.w = Math.round(P.w * .9); L.x = Math.round(P.w * .05); L.h = measureText(L).h; L.y = Math.round(P.h - L.h - P.h * .02); ED.addLayer(L, {label:'Crédits'}); window.SWDlg.close(); });
+  });
+}
 function shortcutsDlg(){
   const rows = [['Espace', 'Lecture / pause'], ['S', 'Couper à la tête de lecture'], ['Suppr', 'Supprimer la sélection'], ['Ctrl + Z / Ctrl + Maj + Z', 'Annuler / rétablir'], ['Ctrl + C / V / D', 'Copier / coller / dupliquer'],
-    ['T', 'Ajouter un texte'], ['P', 'Crayon (dessiner) · Échap pour arrêter'], ['Ctrl + G / Ctrl + Maj + G', 'Grouper / dégrouper'], ['Page préc. / suiv.', 'Changer de page'], ['Alt + clic', 'Sélectionner un élément dans un groupe'], ['Flèches', 'Déplacer (Maj : ×10) · sans sélection : image par image'], ['J / L', 'Reculer / avancer d\'une seconde'], ['Début / Fin', 'Aller au début / à la fin'], ['Ctrl + molette', 'Zoomer'], ['Espace + glisser', 'Se déplacer dans la scène'], ['Double-clic', 'Écrire dans un texte'], ['Ctrl + E', 'Exporter']];
+    ['T', 'Ajouter un texte'], ['P', 'Crayon (dessiner) · Échap pour arrêter'], ['Ctrl + G / Ctrl + Maj + G', 'Grouper / dégrouper'], ['Page préc. / suiv.', 'Changer de page'], ['Alt + clic', 'Sélectionner un élément dans un groupe'], ['Flèches', 'Déplacer (Maj : ×10) · sans sélection : image par image'], ['J / L', 'Reculer / avancer d\'une seconde'], ['Début / Fin', 'Aller au début / à la fin'], ['Ctrl + molette', 'Zoomer'], ['Espace + glisser', 'Se déplacer dans la scène'], ['Double-clic', 'Écrire dans un texte'], ['Ctrl + E', 'Exporter'], ['Ctrl + F', 'Rechercher et remplacer'], ['Ctrl + Alt + P', 'Présenter']];
   window.SWDlg.open(`<h3>Raccourcis clavier</h3><dl class="keys">${rows.map(([a, b]) => `<dt><kbd>${escH(a)}</kbd></dt><dd>${escH(b)}</dd>`).join('')}</dl><div class="dlg-acts"><button type="button" class="ap-btn" data-dlg="close">Compris</button></div>`);
 }
 
