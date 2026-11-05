@@ -335,7 +335,6 @@ kbd{font:600 11.5px var(--f-mono);padding:2px 6px;border-radius:6px;border:1px s
 /* icônes des apps sur l'écran de connexion */
 .ap-ic.m{background:transparent}
 .ap-ic.m svg{width:40px;height:40px}
-.ap-ic.w{background:linear-gradient(135deg,#8B3CF7,#3D63FF 30%,#14C2EC 48%,#78DD6A 62%,#FFD43F 76%,#FF8A3D 88%,#FF3F86);border-radius:9px}
 /* adaptations */
 @media (max-width:1180px){.st-nav button span{display:none}.st-nav button{padding:0 10px}.sm-insp:not(.closed){position:absolute;right:0;top:0;bottom:0;z-index:8;box-shadow:var(--sh3)}}
 @media (max-width:900px){
